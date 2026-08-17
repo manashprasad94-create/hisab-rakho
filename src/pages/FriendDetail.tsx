@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, Receipt } from 'lucide-react'
+import { ArrowLeft, Plus, Receipt, CheckCircle2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
 import {
@@ -9,6 +9,8 @@ import {
   confirmPayment,
   rejectPayment,
   getPendingPaymentRecords,
+  acceptTransaction,
+  rejectTransaction,
 } from '../lib/transactions'
 import { generateUpiLink } from '../lib/upi'
 import Card from '../components/card'
@@ -56,6 +58,17 @@ export default function FriendDetail() {
     if (t.payer_id === user?.id) return sum + Number(t.remaining_amount)
     return sum - Number(t.remaining_amount)
   }, 0)
+  // Group transactions by date (formatted like "15 Aug 2026")
+  const groupedByDate = transactions.reduce((groups: Record<string, any[]>, t) => {
+    const dateKey = new Date(t.created_at).toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })
+    if (!groups[dateKey]) groups[dateKey] = []
+    groups[dateKey].push(t)
+    return groups
+  }, {})
 
   const handleMarkPaid = async (transactionId: string, amount: number) => {
     await markAsPaid(transactionId, amount)
@@ -69,6 +82,16 @@ export default function FriendDetail() {
 
   const handleReject = async (paymentRecordId: string) => {
     await rejectPayment(paymentRecordId)
+    loadData()
+  }
+
+  const handleAcceptTxn = async (transactionId: string) => {
+    await acceptTransaction(transactionId)
+    loadData()
+  }
+
+  const handleRejectTxn = async (transactionId: string) => {
+    await rejectTransaction(transactionId)
     loadData()
   }
 
@@ -120,65 +143,98 @@ export default function FriendDetail() {
           <EmptyState icon={Receipt} title="No transactions yet" subtitle="Add one to start tracking with this friend" />
         </Card>
       ) : (
-        <div className="space-y-2">
-          {transactions.map((t) => {
-            const iAmPayee = t.payee_id === user?.id
-            const pending = pendingByTxn[t.id] || []
+        <div className="space-y-4">
+          {Object.entries(groupedByDate).map(([dateLabel, txnsOnDate]) => (
+            <div key={dateLabel}>
+              <p className="text-xs font-semibold text-text-muted mb-2">{dateLabel}</p>
+              <div className="space-y-2">
+                {txnsOnDate.map((t) => {
+                  const iAmPayee = t.payee_id === user?.id
+                  const iCreatedIt = t.created_by === user?.id
+                  const pending = pendingByTxn[t.id] || []
+                  const needsMyAcceptance = t.status === 'pending_acceptance' && !iCreatedIt
+                  const isSettled = t.status === 'settled'
 
-            return (
-              <Card key={t.id} className="p-3">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="font-medium text-sm">{t.reason || 'No reason'}</p>
-                    <p className="text-xs text-text-muted capitalize">{t.category} · {t.status.replace('_', ' ')}</p>
-                  </div>
-                  <p className={`font-semibold ${iAmPayee ? 'text-owe' : 'text-receive'}`}>
-                    ₹{Number(t.remaining_amount).toFixed(2)}
-                  </p>
-                </div>
-
-                {t.status !== 'settled' && (
-                  <div className="mt-3 flex gap-2 flex-wrap">
-                    {iAmPayee && pending.length === 0 && (
-                      <>
-                        {friend.upi_id && (
-                          <Button
-                            onClick={() => handlePayViaUpi(friend.upi_id, friend.full_name, t.remaining_amount, t.reason)}
-                            className="text-xs py-1.5 px-3"
-                          >
-                            Pay via UPI
-                          </Button>
-                        )}
-                        <Button
-                          variant="secondary"
-                          onClick={() => handleMarkPaid(t.id, t.remaining_amount)}
-                          className="text-xs py-1.5 px-3"
-                        >
-                          I've Paid
-                        </Button>
-                      </>
-                    )}
-
-                    {!iAmPayee && pending.map((p) => (
-                      <div key={p.id} className="flex gap-2 items-center text-xs w-full">
-                        <span className="text-text-muted flex-1">Claims paid ₹{p.amount}</span>
-                        <Button onClick={() => handleConfirm(p.id, t.id, p.amount)} className="text-xs py-1.5 px-3">
-                          Confirm
-                        </Button>
-                        <Button variant="danger" onClick={() => handleReject(p.id)} className="text-xs py-1.5 px-3">
-                          Reject
-                        </Button>
+                  return (
+                    <Card
+                      key={t.id}
+                      className={`p-3 ${needsMyAcceptance ? 'border-primary border-2' : ''} ${isSettled ? 'bg-primary/5 border-primary/20' : ''}`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          {isSettled && <CheckCircle2 size={16} className="text-primary shrink-0" />}
+                          <div>
+                            <p className="font-medium text-sm">{t.reason || 'No reason'}</p>
+                            <p className="text-xs text-text-muted capitalize">
+                              {t.category} · {t.status === 'pending_acceptance' ? 'awaiting response' : isSettled ? `settled · originally ₹${t.amount}` : t.status.replace('_', ' ')}
+                            </p>
+                          </div>
+                        </div>
+                        <p className={`font-semibold ${isSettled ? 'text-primary' : iAmPayee ? 'text-owe' : 'text-receive'}`}>
+                          {isSettled ? '✓' : `₹${Number(t.remaining_amount).toFixed(2)}`}
+                        </p>
                       </div>
-                    ))}
 
-                    {iAmPayee && pending.length > 0 && (
-                      <span className="text-xs text-text-muted">Waiting for confirmation...</span>
-                    )}
-                  </div>
-                )}
-              </Card>
-            )
-          })}
+                      {needsMyAcceptance && (
+                        <div className="mt-3 flex gap-2">
+                          <Button onClick={() => handleAcceptTxn(t.id)} className="text-xs py-1.5 px-3 flex-1">
+                            Accept
+                          </Button>
+                          <Button variant="danger" onClick={() => handleRejectTxn(t.id)} className="text-xs py-1.5 px-3 flex-1">
+                            Reject
+                          </Button>
+                        </div>
+                      )}
+
+                      {t.status === 'pending_acceptance' && iCreatedIt && (
+                        <p className="mt-2 text-xs text-text-muted">Waiting for {friend.full_name} to accept...</p>
+                      )}
+
+                      {t.status !== 'settled' && t.status !== 'pending_acceptance' && (
+                        <div className="mt-3 flex gap-2 flex-wrap">
+                          {iAmPayee && pending.length === 0 && (
+                            <>
+                              {friend.upi_id && (
+                                <Button
+                                  onClick={() => handlePayViaUpi(friend.upi_id, friend.full_name, t.remaining_amount, t.reason)}
+                                  className="text-xs py-1.5 px-3"
+                                >
+                                  Pay via UPI
+                                </Button>
+                              )}
+                              <Button
+                                variant="secondary"
+                                onClick={() => handleMarkPaid(t.id, t.remaining_amount)}
+                                className="text-xs py-1.5 px-3"
+                              >
+                                I've Paid
+                              </Button>
+                            </>
+                          )}
+
+                          {!iAmPayee && pending.map((p) => (
+                            <div key={p.id} className="flex gap-2 items-center text-xs w-full">
+                              <span className="text-text-muted flex-1">Claims paid ₹{p.amount}</span>
+                              <Button onClick={() => handleConfirm(p.id, t.id, p.amount)} className="text-xs py-1.5 px-3">
+                                Confirm
+                              </Button>
+                              <Button variant="danger" onClick={() => handleReject(p.id)} className="text-xs py-1.5 px-3">
+                                Reject
+                              </Button>
+                            </div>
+                          ))}
+
+                          {iAmPayee && pending.length > 0 && (
+                            <span className="text-xs text-text-muted">Waiting for confirmation...</span>
+                          )}
+                        </div>
+                      )}
+                    </Card>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
