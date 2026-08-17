@@ -52,7 +52,7 @@ export default function FriendDetail() {
   }, [friendId])
 
   const netBalance = transactions.reduce((sum, t) => {
-    if (t.status === 'settled') return sum
+    if (t.status === 'settled' || t.status === 'pending_acceptance') return sum
     if (t.payer_id === user?.id) return sum + Number(t.remaining_amount)
     return sum - Number(t.remaining_amount)
   }, 0)

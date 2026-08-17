@@ -74,22 +74,61 @@ export async function createTransaction(
       remaining_amount: amount,
       reason,
       category,
-      status: 'pending',
+      status: 'pending_acceptance',
     })
     .select()
     .single()
   if (error) throw error
 
   const recipientId = direction === 'i_paid' ? friendId : userId
-  const payerName = useAuthStore.getState().profile?.full_name || 'Someone'
+  const creatorName = useAuthStore.getState().profile?.full_name || 'Someone'
   sendNotification(
     recipientId,
-    'New transaction',
-    `${payerName} added a transaction of ₹${amount} — ${reason || 'no reason'}`
+    'New transaction request',
+    `${creatorName} wants to record ₹${amount} — ${reason || 'no reason'}. Please review.`
   )
 
   return data
 }
+
+// Accept a pending_acceptance transaction — only the non-creator party should call this
+export async function acceptTransaction(transactionId: string) {
+  const userId = useAuthStore.getState().user?.id
+  const { data, error } = await supabase
+    .from('friend_transactions')
+    .update({ status: 'pending', updated_at: new Date().toISOString() })
+    .eq('id', transactionId)
+    .select()
+    .single()
+  if (error) throw error
+
+  if (data && data.created_by !== userId) {
+    const accepterName = useAuthStore.getState().profile?.full_name || 'Someone'
+    sendNotification(data.created_by, 'Transaction accepted', `${accepterName} accepted your transaction of ₹${data.amount}`)
+  }
+  return data
+}
+
+// Reject a pending_acceptance transaction — removes it entirely
+export async function rejectTransaction(transactionId: string) {
+  const { data, error } = await supabase
+    .from('friend_transactions')
+    .select('created_by, amount')
+    .eq('id', transactionId)
+    .single()
+  if (error) throw error
+
+  const { error: deleteError } = await supabase
+    .from('friend_transactions')
+    .delete()
+    .eq('id', transactionId)
+  if (deleteError) throw deleteError
+
+  if (data) {
+    sendNotification(data.created_by, 'Transaction rejected', `Your transaction of ₹${data.amount} was rejected`)
+  }
+}
+
 
 // List all transactions involving current user, with friend profile joined
 export async function listTransactionsWithFriend(friendId: string) {

@@ -72,8 +72,8 @@ function Dashboard() {
     listAllTransactions().then((txns) => {
       let receive = 0
       let pay = 0
-      for (const t of txns) {
-        if (t.status === 'settled') continue
+     for (const t of txns) {
+        if (t.status === 'settled' || t.status === 'pending_acceptance') continue
         if (t.payer_id === user.id) receive += Number(t.remaining_amount)
         else pay += Number(t.remaining_amount)
       }
