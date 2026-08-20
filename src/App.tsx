@@ -11,6 +11,7 @@ import { supabase } from './lib/supabase'
 import { useAuthStore } from './store/authStore'
 import Signup from './pages/auth/Signup'
 import Login from './pages/auth/Login'
+import LandingPage from './pages/LandingPage'
 import Friends from './pages/Friends'
 import AddTransaction from './pages/AddTransaction'
 import FriendDetail from './pages/FriendDetail'
@@ -38,7 +39,7 @@ function BottomNav() {
   if (!user) return null
 
   const items = [
-    { path: '/', icon: Home, label: 'Home' },
+    { path: '/dashboard', icon: Home, label: 'Home' },
     { path: '/friends', icon: Users, label: 'Friends' },
     { path: '/expenses', icon: Wallet, label: 'Expenses' },
     { path: '/profile', icon: UserIcon, label: 'Profile' },
@@ -194,12 +195,13 @@ function App() {
     <BrowserRouter>
     <BottomNav />
       <Routes>
+        <Route path="/dashboard" element={<LandingPage />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route
-          path="/"
+          path="/dashboard"
           element={
             <ProtectedRoute>
               <Dashboard />

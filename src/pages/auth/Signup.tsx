@@ -18,7 +18,7 @@ export default function Signup() {
 
   useEffect(() => {
     if (submitted && user) {
-      navigate('/')
+      navigate('/dashboard')
     }
   }, [submitted, user, navigate])
 
