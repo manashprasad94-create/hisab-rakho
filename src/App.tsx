@@ -19,6 +19,10 @@ import ResetPassword from './pages/auth/ResetPassword'
 import Profile from './pages/Profile'
 import Expenses from './pages/Expenses'
 import AddExpense from './pages/AddExpense'
+import BalanceBreakdown from './pages/BalanceBreakdown'
+import { listFriends } from './lib/friends'
+import Avatar from './components/Avatar'
+
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuthStore()
@@ -63,7 +67,7 @@ function Dashboard() {
   const { profile, user } = useAuthStore()
   const [toReceive, setToReceive] = useState(0)
   const [toPay, setToPay] = useState(0)
-  const [recent, setRecent] = useState<any[]>([])
+  const [friends, setFriends] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
@@ -72,16 +76,16 @@ function Dashboard() {
     listAllTransactions().then((txns) => {
       let receive = 0
       let pay = 0
-     for (const t of txns) {
+      for (const t of txns) {
         if (t.status === 'settled' || t.status === 'pending_acceptance') continue
         if (t.payer_id === user.id) receive += Number(t.remaining_amount)
         else pay += Number(t.remaining_amount)
       }
       setToReceive(receive)
       setToPay(pay)
-      setRecent(txns.slice(0, 5))
       setLoading(false)
     })
+    listFriends().then((f) => setFriends(f.slice(0, 5)))
   }, [user])
 
   return (
@@ -89,17 +93,17 @@ function Dashboard() {
       <h1 className="text-2xl font-semibold mb-5">Hello, {profile?.full_name?.split(' ')[0] || 'there'} 👋</h1>
 
       <div className="flex gap-3 mb-5">
-        <Card className="flex-1 p-4">
+        <Card onClick={() => navigate('/balance/receive')} className="flex-1 p-4">
           <div className="flex items-center gap-2 mb-1">
             <ArrowDownLeft size={16} className="text-receive" strokeWidth={2.5} />
-            <p className="text-xs text-text-muted font-medium">To Receive</p>
+            <p className="text-xs text-text-muted font-medium">You'll Get</p>
           </div>
           <p className="text-2xl font-semibold text-receive">₹{toReceive.toFixed(0)}</p>
         </Card>
-        <Card className="flex-1 p-4">
+        <Card onClick={() => navigate('/balance/pay')} className="flex-1 p-4">
           <div className="flex items-center gap-2 mb-1">
             <ArrowUpRight size={16} className="text-owe" strokeWidth={2.5} />
-            <p className="text-xs text-text-muted font-medium">To Pay</p>
+            <p className="text-xs text-text-muted font-medium">You'll Pay</p>
           </div>
           <p className="text-2xl font-semibold text-owe">₹{toPay.toFixed(0)}</p>
         </Card>
@@ -109,7 +113,10 @@ function Dashboard() {
         <Plus size={18} /> Add Transaction
       </Button>
 
-      <h2 className="text-sm font-semibold text-text-muted mb-3">Recent Activity</h2>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-semibold text-text-muted">Friends</h2>
+        <button onClick={() => navigate('/friends')} className="text-xs text-primary font-medium">See all</button>
+      </div>
 
       {loading ? (
         <div className="space-y-2">
@@ -117,25 +124,16 @@ function Dashboard() {
             <div key={i} className="h-16 bg-white/60 rounded-2xl animate-pulse border border-border" />
           ))}
         </div>
-      ) : recent.length === 0 ? (
+      ) : friends.length === 0 ? (
         <Card className="p-2">
-          <EmptyState icon={Wallet} title="No transactions yet" subtitle="Add one to start tracking money with friends" />
+          <EmptyState icon={Wallet} title="No friends yet" subtitle="Add a friend to start tracking money together" />
         </Card>
       ) : (
         <div className="space-y-2">
-          {recent.map((t) => (
-            <Card
-              key={t.id}
-              onClick={() => navigate(`/friends/${t.payer_id === user?.id ? t.payee_id : t.payer_id}`)}
-              className="p-3 flex justify-between items-center"
-            >
-              <div>
-                <p className="font-medium text-sm">{t.reason || 'Transaction'}</p>
-                <p className="text-xs text-text-muted capitalize">{t.status.replace('_', ' ')}</p>
-              </div>
-              <p className={`font-semibold ${t.payer_id === user?.id ? 'text-receive' : 'text-owe'}`}>
-                ₹{Number(t.remaining_amount).toFixed(0)}
-              </p>
+          {friends.map((f) => (
+            <Card key={f.friendshipId} onClick={() => navigate(`/friends/${f.friend.id}`)} className="p-3 flex items-center gap-3">
+              <Avatar name={f.friend.full_name} />
+              <span className="font-medium">{f.friend.full_name}</span>
             </Card>
           ))}
         </div>
@@ -238,6 +236,14 @@ function App() {
           element={
             <ProtectedRoute>
               <AddExpense />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/balance/:type"
+          element={
+            <ProtectedRoute>
+              <BalanceBreakdown />
             </ProtectedRoute>
           }
         />
