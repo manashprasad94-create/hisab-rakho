@@ -1,4 +1,15 @@
 import { supabase } from './supabase'
+export async function sendEmailReminder(toEmail: string, toName: string, message: string) {
+  try {
+    await supabase.functions.invoke('send-reminder', {
+      body: { toEmail, toName, message },
+    })
+    return true
+  } catch (err) {
+    console.error('Reminder email failed', err)
+    return false
+  }
+}
 
 export async function sendNotification(recipientId: string, title: string, body: string) {
   try {

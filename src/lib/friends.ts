@@ -11,6 +11,18 @@ export async function searchUserByEmail(email: string) {
   if (error) throw error
   return data
 }
+
+// Search a user by exact phone number (for adding friends)
+export async function searchUserByPhone(phone: string) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, full_name, email, avatar_url')
+    .eq('phone', phone.trim())
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
 // Store an invite for someone not yet registered
 export async function createPendingInvite(email: string) {
   const userId = useAuthStore.getState().user?.id
@@ -31,7 +43,6 @@ export async function sendFriendRequest(friendId: string) {
   if (!userId) throw new Error('Not logged in')
   if (userId === friendId) throw new Error("Can't add yourself")
 
-  // check if friendship already exists either direction
   const { data: existing } = await supabase
     .from('friendships')
     .select('id, status')
@@ -49,7 +60,7 @@ export async function sendFriendRequest(friendId: string) {
   return data
 }
 
-// Accept a pending friend request (only the receiver, user_b, should call this)
+// Accept a pending friend request
 export async function acceptFriendRequest(friendshipId: string) {
   const { error } = await supabase
     .from('friendships')
@@ -79,14 +90,13 @@ export async function listFriends() {
     .eq('status', 'accepted')
   if (error) throw error
 
-  // normalize: always return the "other person's" profile
   return (data || []).map((f: any) => ({
     friendshipId: f.id,
     friend: f.user_a === userId ? f.profiles_b : f.profiles_a,
   }))
 }
 
-// List incoming pending requests (where current user is user_b, i.e. was invited)
+// List incoming pending requests
 export async function listPendingRequests() {
   const userId = useAuthStore.getState().user?.id
   if (!userId) throw new Error('Not logged in')

@@ -3,6 +3,7 @@ export type Profile = {
   full_name: string
   email: string
   upi_id: string | null
+  phone: string | null
   avatar_url: string | null
   created_at: string
 }

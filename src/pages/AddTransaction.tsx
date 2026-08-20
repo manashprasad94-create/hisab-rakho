@@ -17,7 +17,7 @@ export default function AddTransaction() {
   const [amount, setAmount] = useState('')
   const [reason, setReason] = useState('')
   const [category, setCategory] = useState('other')
-  const [direction, setDirection] = useState<'i_paid' | 'they_paid'>('i_paid')
+  const [direction] = useState<'i_paid' | 'they_paid'>('i_paid')
   const [mode, setMode] = useState<'single' | 'group'>('single')
   const [selectedFriends, setSelectedFriends] = useState<string[]>([])
   const [error, setError] = useState('')
@@ -155,29 +155,9 @@ export default function AddTransaction() {
           </select>
 
           {mode === 'single' && (
-            <>
-          <label className="block text-sm mb-2 text-text-muted font-medium">Who paid?</label>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setDirection('i_paid')}
-              className={`flex-1 py-2.5 rounded-xl font-medium border transition ${
-                direction === 'i_paid' ? 'bg-primary text-white border-primary' : 'border-border text-text-muted'
-              }`}
-            >
-              I Paid
-            </button>
-            <button
-              type="button"
-              onClick={() => setDirection('they_paid')}
-              className={`flex-1 py-2.5 rounded-xl font-medium border transition ${
-                direction === 'they_paid' ? 'bg-primary text-white border-primary' : 'border-border text-text-muted'
-              }`}
-            >
-              They Paid
-            </button>
-          </div>
-          </>
+            <p className="text-xs text-text-muted bg-bg-soft p-3 rounded-xl">
+              You paid, your friend will need to accept this before it counts.
+            </p>
           )}
           {mode === 'group' && (
             <p className="text-xs text-text-muted bg-bg-soft p-3 rounded-xl">You paid the full amount, split shows what each friend owes you.</p>

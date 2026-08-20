@@ -17,6 +17,7 @@ import Card from '../components/card'
 import Button from '../components/Button'
 import Avatar from '../components/Avatar'
 import EmptyState from '../components/EmptyState'
+import { sendEmailReminder } from '../lib/notify'
 
 export default function FriendDetail() {
   const { friendId } = useParams<{ friendId: string }>()
@@ -108,6 +109,10 @@ export default function FriendDetail() {
   const handleRejectTxn = async (transactionId: string) => {
     await rejectTransaction(transactionId)
     loadData()
+  }
+
+  const handleRemind = async (message: string) => {
+    await sendEmailReminder(friend.email, friend.full_name, message)
   }
 
   const handlePayViaUpi = (upiId: string, name: string, amount: number, note: string) => {
@@ -207,7 +212,15 @@ export default function FriendDetail() {
                       )}
 
                       {t.status === 'pending_acceptance' && iCreatedIt && (
-                        <p className="mt-2 text-xs text-text-muted">Waiting for {friend.full_name} to accept...</p>
+                        <div className="mt-2 flex items-center justify-between">
+                          <p className="text-xs text-text-muted">Waiting for {friend.full_name} to accept...</p>
+                          <button
+                            onClick={() => handleRemind(`Please accept the transaction of ₹${t.amount} — ${t.reason || 'no reason'}`)}
+                            className="text-xs text-primary font-medium"
+                          >
+                            Remind
+                          </button>
+                        </div>
                       )}
 
                       {t.status !== 'settled' && t.status !== 'pending_acceptance' && (
@@ -246,7 +259,15 @@ export default function FriendDetail() {
                             ))}
 
                           {iAmPayee && pending.length > 0 && (
-                            <span className="text-xs text-text-muted">Waiting for confirmation...</span>
+                            <div className="flex items-center justify-between w-full">
+                              <span className="text-xs text-text-muted">Waiting for confirmation...</span>
+                              <button
+                                onClick={() => handleRemind(`Please confirm the payment of ₹${t.remaining_amount} — ${t.reason || 'no reason'}`)}
+                                className="text-xs text-primary font-medium"
+                              >
+                                Remind
+                              </button>
+                            </div>
                           )}
                         </div>
                       )}

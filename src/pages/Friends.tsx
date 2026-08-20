@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Search, UserPlus, Users } from 'lucide-react'
 import {
   searchUserByEmail,
+  searchUserByPhone,
   sendFriendRequest,
   acceptFriendRequest,
   listFriends,
@@ -19,6 +20,7 @@ export default function Friends() {
   const [friends, setFriends] = useState<any[]>([])
   const [pending, setPending] = useState<any[]>([])
   const [searchEmail, setSearchEmail] = useState('')
+  const [searchMode, setSearchMode] = useState<'email' | 'phone'>('email')
   const [searchResult, setSearchResult] = useState<any>(null)
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
@@ -38,7 +40,7 @@ export default function Friends() {
   const handleSearch = async () => {
     setMessage('')
     setSearchResult(null)
-    const result = await searchUserByEmail(searchEmail)
+    const result = searchMode === 'email' ? await searchUserByEmail(searchEmail) : await searchUserByPhone(searchEmail)
     if (!result) {
       setMessage('not_found')
     } else {
@@ -83,15 +85,33 @@ export default function Friends() {
       <h1 className="text-xl font-semibold mb-4">Friends</h1>
 
       <Card className="p-4 mb-4">
-        <label className="block text-sm mb-2 text-text-muted font-medium">Add friend by email</label>
+        <div className="flex gap-2 mb-2">
+          <button
+            type="button"
+            onClick={() => { setSearchMode('email'); setSearchEmail(''); setSearchResult(null); setMessage('') }}
+            className={`text-xs px-3 py-1 rounded-lg font-medium ${searchMode === 'email' ? 'bg-primary text-white' : 'bg-bg-soft text-text-muted'}`}
+          >
+            Email
+          </button>
+          <button
+            type="button"
+            onClick={() => { setSearchMode('phone'); setSearchEmail(''); setSearchResult(null); setMessage('') }}
+            className={`text-xs px-3 py-1 rounded-lg font-medium ${searchMode === 'phone' ? 'bg-primary text-white' : 'bg-bg-soft text-text-muted'}`}
+          >
+            Phone
+          </button>
+        </div>
+        <label className="block text-sm mb-2 text-text-muted font-medium">
+          Add friend by {searchMode === 'email' ? 'email' : 'phone'}
+        </label>
         <div className="flex gap-2">
           <div className="flex-1 relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
             <input
-              type="email"
+              type={searchMode === 'email' ? 'email' : 'tel'}
               value={searchEmail}
               onChange={(e) => setSearchEmail(e.target.value)}
-              placeholder="friend@email.com"
+              placeholder={searchMode === 'email' ? 'friend@email.com' : '+91 9876543210'}
               className="w-full pl-9 pr-3 py-2 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
@@ -99,11 +119,13 @@ export default function Friends() {
         </div>
 
         {message === 'not_found' ? (
-          <div className="mt-3 p-3 bg-bg-soft rounded-xl text-sm">
+          <div className="mt-2 p-3 bg-bg-soft rounded-lg text-sm">
             <p className="text-text-muted mb-2">This person hasn't joined Hisab Kitab yet.</p>
-            <Button variant="secondary" onClick={handleInvite} disabled={loading} className="text-sm py-1.5">
-              Send Invite
-            </Button>
+            {searchMode === 'email' && (
+              <Button variant="secondary" onClick={handleInvite} disabled={loading} className="text-sm py-1.5">
+                Send Invite
+              </Button>
+            )}
           </div>
         ) : (
           message && <p className="text-sm text-text-muted mt-2">{message}</p>

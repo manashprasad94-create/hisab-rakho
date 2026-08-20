@@ -14,6 +14,9 @@ export default function Profile() {
   const [fullName, setFullName] = useState(profile?.full_name || '')
   const [upiId, setUpiId] = useState(profile?.upi_id || '')
   const [message, setMessage] = useState('')
+  const [phone, setPhone] = useState(profile?.phone || '')
+
+
   const [loading, setLoading] = useState(false)
 
   const handleSave = async (e: React.FormEvent) => {
@@ -21,7 +24,7 @@ export default function Profile() {
     setLoading(true)
     setMessage('')
     try {
-      const updated = await updateProfile({ full_name: fullName, upi_id: upiId })
+      const updated = await updateProfile({ full_name: fullName, upi_id: upiId, phone })
       setProfile(updated)
       setMessage('Saved')
     } catch (err) {
@@ -45,6 +48,7 @@ export default function Profile() {
         <div>
           <p className="font-semibold">{profile?.full_name}</p>
           <p className="text-sm text-text-muted">{profile?.email}</p>
+          <p className="text-sm text-text-muted">{profile?.phone}</p>   
         </div>
       </div>
 
@@ -63,8 +67,15 @@ export default function Profile() {
           />
 
           <label className="flex items-center gap-1.5 text-sm mb-1 text-text-muted font-medium">
-            <Wallet2 size={14} /> UPI ID
+            <UserIcon size={14} /> Phone Number
           </label>
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="+91 9876543210"
+            className="w-full mb-4 px-3 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
+          />
           <input
             type="text"
             value={upiId}
