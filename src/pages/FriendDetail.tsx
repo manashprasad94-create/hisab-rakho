@@ -51,6 +51,20 @@ export default function FriendDetail() {
 
   useEffect(() => {
     loadData()
+
+    const channel = supabase
+      .channel(`friend-detail-${friendId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'friend_transactions' }, () => {
+        loadData()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'payment_records' }, () => {
+        loadData()
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [friendId])
 
   const netBalance = transactions.reduce((sum, t) => {

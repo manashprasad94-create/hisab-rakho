@@ -71,7 +71,7 @@ function Dashboard() {
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
-  useEffect(() => {
+  const refreshDashboard = () => {
     if (!user) return
     listAllTransactions().then((txns) => {
       let receive = 0
@@ -86,6 +86,21 @@ function Dashboard() {
       setLoading(false)
     })
     listFriends().then((f) => setFriends(f.slice(0, 5)))
+  }
+
+  useEffect(() => {
+    refreshDashboard()
+
+    const channel = supabase
+      .channel('dashboard-updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'friend_transactions' }, () => {
+        refreshDashboard()
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [user])
 
   return (
