@@ -13,7 +13,7 @@ import {
   rejectTransaction,
 } from '../lib/transactions'
 import { generateUpiLink } from '../lib/upi'
-import Card from '../components/card'
+import Card from '../components/Card'
 import Button from '../components/Button'
 import Avatar from '../components/Avatar'
 import EmptyState from '../components/EmptyState'
@@ -41,7 +41,7 @@ export default function FriendDetail() {
 
     const pendingMap: Record<string, any[]> = {}
     for (const t of txns) {
-      if (t.status !== 'settled') {
+      if (t.status !== 'settled' && t.status !== 'pending_acceptance') {
         pendingMap[t.id] = await getPendingPaymentRecords(t.id)
       }
     }
@@ -58,7 +58,8 @@ export default function FriendDetail() {
     if (t.payer_id === user?.id) return sum + Number(t.remaining_amount)
     return sum - Number(t.remaining_amount)
   }, 0)
-  // Group transactions by date (formatted like "15 Aug 2026")
+
+  // Group transactions by date (e.g. "15 Aug 2026")
   const groupedByDate = transactions.reduce((groups: Record<string, any[]>, t) => {
     const dateKey = new Date(t.created_at).toLocaleDateString('en-IN', {
       day: 'numeric',
@@ -124,7 +125,7 @@ export default function FriendDetail() {
       </div>
 
       <div className="bg-primary text-white rounded-2xl p-6 mb-4 shadow-sm">
-        <p className="text-sm opacity-80">{netBalance >= 0 ? 'They owe you' : 'You owe them'}</p>
+        <p className="text-sm opacity-80">{netBalance >= 0 ? "You'll get" : "You'll pay"}</p>
         <p className="text-3xl font-semibold mt-1">₹{Math.abs(netBalance).toFixed(2)}</p>
       </div>
 
@@ -166,7 +167,12 @@ export default function FriendDetail() {
                           <div>
                             <p className="font-medium text-sm">{t.reason || 'No reason'}</p>
                             <p className="text-xs text-text-muted capitalize">
-                              {t.category} · {t.status === 'pending_acceptance' ? 'awaiting response' : isSettled ? `settled · originally ₹${t.amount}` : t.status.replace('_', ' ')}
+                              {t.category} ·{' '}
+                              {t.status === 'pending_acceptance'
+                                ? 'awaiting response'
+                                : isSettled
+                                ? `settled · originally ₹${t.amount}`
+                                : t.status.replace('_', ' ')}
                             </p>
                           </div>
                         </div>
@@ -212,17 +218,18 @@ export default function FriendDetail() {
                             </>
                           )}
 
-                          {!iAmPayee && pending.map((p) => (
-                            <div key={p.id} className="flex gap-2 items-center text-xs w-full">
-                              <span className="text-text-muted flex-1">Claims paid ₹{p.amount}</span>
-                              <Button onClick={() => handleConfirm(p.id, t.id, p.amount)} className="text-xs py-1.5 px-3">
-                                Confirm
-                              </Button>
-                              <Button variant="danger" onClick={() => handleReject(p.id)} className="text-xs py-1.5 px-3">
-                                Reject
-                              </Button>
-                            </div>
-                          ))}
+                          {!iAmPayee &&
+                            pending.map((p) => (
+                              <div key={p.id} className="flex gap-2 items-center text-xs w-full">
+                                <span className="text-text-muted flex-1">Claims paid ₹{p.amount}</span>
+                                <Button onClick={() => handleConfirm(p.id, t.id, p.amount)} className="text-xs py-1.5 px-3">
+                                  Confirm
+                                </Button>
+                                <Button variant="danger" onClick={() => handleReject(p.id)} className="text-xs py-1.5 px-3">
+                                  Reject
+                                </Button>
+                              </div>
+                            ))}
 
                           {iAmPayee && pending.length > 0 && (
                             <span className="text-xs text-text-muted">Waiting for confirmation...</span>
