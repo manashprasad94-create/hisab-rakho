@@ -13,7 +13,7 @@ import {
   rejectTransaction,
 } from '../lib/transactions'
 import { generateUpiLink } from '../lib/upi'
-import Card from '../components/Card'
+import Card from '../components/card'
 import Button from '../components/Button'
 import Avatar from '../components/Avatar'
 import EmptyState from '../components/EmptyState'
