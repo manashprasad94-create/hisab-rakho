@@ -1,20 +1,52 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #0f766e;       /* teal - matches mockup */
+  --color-primary: #0f766e;
   --color-primary-dark: #0d5c56;
+
   --color-bg: #ffffff;
-  --color-bg-soft: #fdf6e9;       /* cream accent from mockup */
+  --color-bg-soft: #fdf6e9;
+
   --color-text: #1f2937;
   --color-text-muted: #6b7280;
-  --color-owe: #dc2626;           /* red - "to pay" */
-  --color-receive: #0f766e;       /* teal - "to receive" */
+
+  --color-owe: #dc2626;
+  --color-receive: #0f766e;
+
   --color-border: #e5e7eb;
+}
+
+:root {
+  font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+  color: var(--color-text);
+  background: var(--color-bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
   background: var(--color-bg);
   color: var(--color-text);
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+* {
+  box-sizing: border-box;
 }
