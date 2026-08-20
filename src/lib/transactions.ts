@@ -49,6 +49,22 @@ export async function createGroupExpense(
 
   return data
 }
+// Check if the friend already has a pending_acceptance transaction claiming the reverse direction
+export async function checkReciprocalPending(friendId: string, amount: number) {
+  const userId = useAuthStore.getState().user?.id
+  if (!userId) return null
+
+  const { data, error } = await supabase
+    .from('friend_transactions')
+    .select('*')
+    .eq('status', 'pending_acceptance')
+    .eq('created_by', friendId)
+    .eq('payee_id', userId)
+    .eq('amount', amount)
+  if (error) return null
+
+  return data && data.length > 0 ? data[0] : null
+}
 // Create a transaction. direction: 'i_paid' means current user paid for friend (friend owes current user).
 // 'they_paid' means friend paid for current user (current user owes friend).
 export async function createTransaction(
