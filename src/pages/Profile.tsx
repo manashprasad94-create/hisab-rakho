@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, User as UserIcon, Wallet2 } from 'lucide-react'
+import { LogOut, User as UserIcon} from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { updateProfile } from '../lib/profile'
 import { signOut } from '../lib/auth'
