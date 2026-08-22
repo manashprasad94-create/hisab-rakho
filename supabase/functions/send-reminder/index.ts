@@ -1,5 +1,4 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { SmtpClient } from 'https://deno.land/x/smtp@v0.7.0/mod.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,25 +10,33 @@ serve(async (req) => {
 
   try {
     const { toEmail, toName, message } = await req.json()
+    const brevoApiKey = Deno.env.get('BREVO_API_KEY') ?? ''
+    const senderEmail = Deno.env.get('BREVO_SENDER_EMAIL') ?? ''
 
-    const client = new SmtpClient()
-    await client.connectTLS({
-      hostname: 'smtp.gmail.com',
-      port: 465,
-      username: Deno.env.get('GMAIL_USER') ?? '',
-      password: Deno.env.get('GMAIL_APP_PASSWORD') ?? '',
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'api-key': brevoApiKey,
+      },
+      body: JSON.stringify({
+        sender: { name: 'Hisab Kitab', email: senderEmail },
+        to: [{ email: toEmail, name: toName || '' }],
+        subject: 'Hisab Kitab — Reminder',
+        htmlContent: `<p>Hi ${toName || ''},</p><p>${message}</p><p>— Sent via Hisab Kitab</p>`,
+      }),
     })
 
-    await client.send({
-      from: Deno.env.get('GMAIL_USER') ?? '',
-      to: toEmail,
-      subject: 'Hisab Kitab — Reminder',
-      content: `Hi ${toName || ''},\n\n${message}\n\n— Sent via Hisab Kitab`,
-    })
+    const result = await response.json()
 
-    await client.close()
+    if (!response.ok) {
+      return new Response(JSON.stringify({ error: result }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
 
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ success: true, result }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err) {
