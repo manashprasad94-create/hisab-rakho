@@ -44,7 +44,7 @@ export default function GroupFund() {
           <PiggyBank size={32} className="text-primary mx-auto mb-3" />
           <p className="font-medium">You're not part of this fund group</p>
           <p className="text-sm text-text-muted mt-1">Ask the admin to add you if you should have access.</p>
-          <Button variant="secondary" onClick={() => navigate('/')} className="w-full mt-4">
+          <Button variant="secondary" onClick={() => navigate('/dashboard', { replace: true })} className="w-full mt-4">
             Back to Dashboard
           </Button>
         </Card>
