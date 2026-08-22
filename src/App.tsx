@@ -33,6 +33,7 @@ import Profile from './pages/Profile'
 import Expenses from './pages/Expenses'
 import AddExpense from './pages/AddExpense'
 import BalanceBreakdown from './pages/BalanceBreakdown'
+import PersonalNotes from './pages/PersonalNotes'
 
 import { listFriends } from './lib/friends'
 import Avatar from './components/Avatar'
@@ -580,6 +581,14 @@ function App() {
           element={
             <ProtectedRoute>
               <BalanceBreakdown />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/personal-notes"
+          element={
+            <ProtectedRoute>
+              <PersonalNotes />
             </ProtectedRoute>
           }
         />

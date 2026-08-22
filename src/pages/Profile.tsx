@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, User as UserIcon} from 'lucide-react'
+import { LogOut, User as UserIcon, StickyNote } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { updateProfile } from '../lib/profile'
 import { signOut } from '../lib/auth'
@@ -90,6 +90,10 @@ export default function Profile() {
           </Button>
         </Card>
       </form>
+
+      <Button variant="secondary" onClick={() => navigate('/personal-notes')} className="w-full flex items-center justify-center gap-2 mb-3">
+        <StickyNote size={16} /> Personal Notes
+      </Button>
 
       <Button variant="danger" onClick={handleLogout} className="w-full flex items-center justify-center gap-2">
         <LogOut size={16} /> Logout

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Users, Search } from 'lucide-react'
 import { listFriends, searchUserByEmail, searchUserByPhone, sendFriendRequest } from '../lib/friends'
 import { createTransaction, createGroupExpense, checkReciprocalPending, acceptTransaction } from '../lib/transactions'
+import { createExternalTransaction } from '../lib/externalTransactions'
 import Card from '../components/card'
 import Button from '../components/Button'
 import Avatar from '../components/Avatar'
@@ -31,6 +32,10 @@ export default function AddTransaction() {
   const [nonFriendResult, setNonFriendResult] = useState<any>(null)
   const [nonFriendMessage, setNonFriendMessage] = useState('')
 
+  // personal note (for people not on the app)
+  const [showPersonalNote, setShowPersonalNote] = useState(false)
+  const [noteName, setNoteName] = useState('')
+  const [noteDirection, setNoteDirection] = useState<'they_owe_me' | 'i_owe_them'>('they_owe_me')
   useEffect(() => {
     listFriends().then(setFriends)
   }, [])
@@ -68,6 +73,13 @@ export default function AddTransaction() {
 
     setLoading(true)
     try {
+      if (showPersonalNote) {
+        if (!noteName.trim()) return setError('Enter a name')
+        await createExternalTransaction(noteName, Number(amount), reason, category, noteDirection)
+        navigate('/personal-notes')
+        return
+      }
+
       if (mode === 'group') {
         if (selectedFriends.length === 0) return setError('Select at least one friend')
         await createGroupExpense(selectedFriends, Number(amount), reason, category)
@@ -94,7 +106,7 @@ export default function AddTransaction() {
     }
   }
 
-  const selectedNonFriendName = friendId && !friends.some((f) => f.friend.id === friendId) ? nonFriendResult?.full_name : null
+       const selectedNonFriendName = friendId && !friends.some((f) => f.friend.id === friendId) ? nonFriendResult?.full_name : null
 
   return (
     <div className="min-h-screen bg-bg-soft p-4 pb-24">
@@ -160,7 +172,7 @@ export default function AddTransaction() {
             <label className="block text-sm text-text-muted font-medium">
               {mode === 'group' ? 'Split with' : 'Friend'}
             </label>
-            {mode === 'single' && (
+            {mode === 'single' && !showPersonalNote && (
               <button
                 type="button"
                 onClick={() => setShowNonFriendSearch((v) => !v)}
@@ -170,6 +182,60 @@ export default function AddTransaction() {
               </button>
             )}
           </div>
+
+          {mode === 'single' && showNonFriendSearch && !showPersonalNote && (
+            <button
+              type="button"
+              onClick={() => { setShowNonFriendSearch(false); setShowPersonalNote(true) }}
+              className="text-xs text-primary font-medium mb-3 block"
+            >
+              They don't use Hisab Kitab? Add as a personal note instead →
+            </button>
+          )}
+
+          {showPersonalNote && (
+            <div className="mb-4 p-3 bg-bg-soft rounded-xl">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs text-text-muted">Personal note — only visible to you, self-managed</p>
+                <button
+                  type="button"
+                  onClick={() => setShowPersonalNote(false)}
+                  className="text-xs text-primary font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+              <label className="block text-sm mb-1 text-text-muted font-medium">Their Name</label>
+              <input
+                type="text"
+                value={noteName}
+                onChange={(e) => setNoteName(e.target.value)}
+                placeholder="e.g. Neighbor Sharma"
+                className="w-full mb-3 px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <label className="block text-sm mb-2 text-text-muted font-medium">Direction</label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setNoteDirection('they_owe_me')}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium border ${
+                    noteDirection === 'they_owe_me' ? 'bg-primary text-white border-primary' : 'border-border text-text-muted'
+                  }`}
+                >
+                  They Owe Me
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNoteDirection('i_owe_them')}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium border ${
+                    noteDirection === 'i_owe_them' ? 'bg-primary text-white border-primary' : 'border-border text-text-muted'
+                  }`}
+                >
+                  I Owe Them
+                </button>
+              </div>
+            </div>
+          )}
 
           {showNonFriendSearch && mode === 'single' && (
             <div className="mb-4 p-3 bg-bg-soft rounded-xl">
@@ -227,7 +293,7 @@ export default function AddTransaction() {
             </div>
           )}
 
-          {friends.length === 0 ? (
+          {!showPersonalNote && (friends.length === 0 ? (
             <p className="text-sm text-text-muted mb-4">No friends yet — search above to add one.</p>
           ) : (
             <div className="flex gap-2 overflow-x-auto pb-1 mb-4">
@@ -248,7 +314,7 @@ export default function AddTransaction() {
                 )
               })}
             </div>
-          )}
+          ))}
           {mode === 'group' && selectedFriends.length > 0 && amount && (
             <p className="text-xs text-text-muted mb-4">
               Split ₹{amount} between you + {selectedFriends.length} friend{selectedFriends.length > 1 ? 's' : ''} = ₹
