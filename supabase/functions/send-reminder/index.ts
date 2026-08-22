@@ -9,9 +9,12 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
+    console.log('send-reminder invoked')
     const { toEmail, toName, message } = await req.json()
+    console.log('payload received', { toEmail, toName })
     const brevoApiKey = Deno.env.get('BREVO_API_KEY') ?? ''
     const senderEmail = Deno.env.get('BREVO_SENDER_EMAIL') ?? ''
+    console.log('secrets check', { hasApiKey: !!brevoApiKey, senderEmail })
 
     const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
@@ -27,7 +30,9 @@ serve(async (req) => {
       }),
     })
 
+    console.log('brevo response status', response.status)
     const result = await response.json()
+    console.log('brevo response body', JSON.stringify(result))
 
     if (!response.ok) {
       return new Response(JSON.stringify({ error: result }), {
