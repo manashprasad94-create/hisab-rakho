@@ -10,6 +10,9 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
       includeAssets: ['favicon.svg'],
       manifest: {
         name: 'Hisab Kitab',
@@ -21,11 +24,17 @@ export default defineConfig({
         start_url: '/',
         share_target: {
           action: '/share-target',
-          method: 'GET',
+          method: 'POST',
+          enctype: 'multipart/form-data',
           params: {
             title: 'title',
             text: 'text',
-            url: 'url',
+            files: [
+              {
+                name: 'photo',
+                accept: ['image/*'],
+              },
+            ],
           },
         },
         icons: [
@@ -41,7 +50,7 @@ export default defineConfig({
           },
         ],
       },
-      workbox: {
+      injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
       },
     }),
