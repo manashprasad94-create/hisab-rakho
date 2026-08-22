@@ -111,8 +111,11 @@ export default function FriendDetail() {
     loadData()
   }
 
-  const handleRemind = async (message: string) => {
+  const [remindedIds, setRemindedIds] = useState<Set<string>>(new Set())
+
+  const handleRemind = async (message: string, id: string) => {
     await sendEmailReminder(friend.email, friend.full_name, message)
+    setRemindedIds((prev) => new Set(prev).add(id))
   }
 
   const handlePayViaUpi = (upiId: string, name: string, amount: number, note: string) => {
@@ -178,7 +181,13 @@ export default function FriendDetail() {
                   return (
                     <Card
                       key={t.id}
-                      className={`p-3 ${needsMyAcceptance ? 'border-primary border-2' : ''} ${isSettled ? 'bg-primary/5 border-primary/20' : ''}`}
+                      className={`p-3 ${needsMyAcceptance ? 'border-primary border-2' : ''} ${
+                        isSettled
+                          ? 'bg-primary/5 border-primary/20'
+                          : t.status !== 'pending_acceptance'
+                          ? 'bg-owe/5 border-owe/20'
+                          : ''
+                      }`}
                     >
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
@@ -215,10 +224,11 @@ export default function FriendDetail() {
                         <div className="mt-2 flex items-center justify-between">
                           <p className="text-xs text-text-muted">Waiting for {friend.full_name} to accept...</p>
                           <button
-                            onClick={() => handleRemind(`Please accept the transaction of ₹${t.amount} — ${t.reason || 'no reason'}`)}
-                            className="text-xs text-primary font-medium"
+                            onClick={() => handleRemind(`Please accept the transaction of ₹${t.amount} — ${t.reason || 'no reason'}`, t.id)}
+                            disabled={remindedIds.has(t.id)}
+                            className="text-xs text-primary font-medium disabled:text-text-muted disabled:opacity-70"
                           >
-                            Remind
+                            {remindedIds.has(t.id) ? 'Reminded ✓' : 'Remind'}
                           </button>
                         </div>
                       )}
@@ -262,10 +272,11 @@ export default function FriendDetail() {
                             <div className="flex items-center justify-between w-full">
                               <span className="text-xs text-text-muted">Waiting for confirmation...</span>
                               <button
-                                onClick={() => handleRemind(`Please confirm the payment of ₹${t.remaining_amount} — ${t.reason || 'no reason'}`)}
-                                className="text-xs text-primary font-medium"
+                                onClick={() => handleRemind(`Please confirm the payment of ₹${t.remaining_amount} — ${t.reason || 'no reason'}`, t.id)}
+                                disabled={remindedIds.has(t.id)}
+                                className="text-xs text-primary font-medium disabled:text-text-muted disabled:opacity-70"
                               >
-                                Remind
+                                {remindedIds.has(t.id) ? 'Reminded ✓' : 'Remind'}
                               </button>
                             </div>
                           )}
