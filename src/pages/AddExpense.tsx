@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, UtensilsCrossed, Fuel, ShoppingBag, Plane, Film, HeartPulse, GraduationCap, MoreHorizontal } from 'lucide-react'
 import { addExpense } from '../lib/expenses'
 import Card from '../components/card'
@@ -18,9 +18,10 @@ const CATEGORIES = [
 
 export default function AddExpense() {
   const navigate = useNavigate()
-  const [amount, setAmount] = useState('')
+  const [searchParams] = useSearchParams()
+  const [amount, setAmount] = useState(searchParams.get('amount') || '')
   const [category, setCategory] = useState('food')
-  const [note, setNote] = useState('')
+  const [note, setNote] = useState(searchParams.get('note') || '')
   const [spentOn, setSpentOn] = useState(new Date().toISOString().slice(0, 10))
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)

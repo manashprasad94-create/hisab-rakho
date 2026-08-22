@@ -39,6 +39,7 @@ import AddFunds from './pages/AddFunds'
 import AddFundExpense from './pages/AddFundExpense'
 import GroupFundHistory from './pages/GroupFundHistory'
 import { PiggyBank } from 'lucide-react'
+import ShareTarget from './pages/ShareTarget'
 
 import { listFriends } from './lib/friends'
 import Avatar from './components/Avatar'
@@ -640,6 +641,14 @@ function App() {
           element={
             <ProtectedRoute>
               <GroupFundHistory />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/share-target"
+          element={
+            <ProtectedRoute>
+              <ShareTarget />
             </ProtectedRoute>
           }
         />
