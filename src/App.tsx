@@ -34,6 +34,11 @@ import Expenses from './pages/Expenses'
 import AddExpense from './pages/AddExpense'
 import BalanceBreakdown from './pages/BalanceBreakdown'
 import PersonalNotes from './pages/PersonalNotes'
+import GroupFund from './pages/GroupFund'
+import AddFunds from './pages/AddFunds'
+import AddFundExpense from './pages/AddFundExpense'
+import GroupFundHistory from './pages/GroupFundHistory'
+import { PiggyBank } from 'lucide-react'
 
 import { listFriends } from './lib/friends'
 import Avatar from './components/Avatar'
@@ -262,6 +267,20 @@ function Dashboard() {
         <Plus size={18} />
         Add Transaction
       </Button>
+
+      {/* ===================================================
+          GROUP FUND LINK
+          =================================================== */}
+
+      <Card onClick={() => navigate('/group-fund')} className="p-4 mb-5 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+          <PiggyBank size={18} className="text-primary" />
+        </div>
+        <div>
+          <p className="font-medium text-sm">Group Fund</p>
+          <p className="text-xs text-text-muted">View shared fund balance</p>
+        </div>
+      </Card>
 
 
       {/* ===================================================
@@ -589,6 +608,38 @@ function App() {
           element={
             <ProtectedRoute>
               <PersonalNotes />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/group-fund"
+          element={
+            <ProtectedRoute>
+              <GroupFund />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/group-fund/add-funds"
+          element={
+            <ProtectedRoute>
+              <AddFunds />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/group-fund/add-expense"
+          element={
+            <ProtectedRoute>
+              <AddFundExpense />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/group-fund/history"
+          element={
+            <ProtectedRoute>
+              <GroupFundHistory />
             </ProtectedRoute>
           }
         />
