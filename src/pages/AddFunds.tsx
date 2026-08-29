@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { addFundDeposit } from '../lib/groupFund'
 import Card from '../components/card'
 import Button from '../components/Button'
 
 export default function AddFunds() {
+  const { fundId } = useParams<{ fundId: string }>()
   const navigate = useNavigate()
   const [amount, setAmount] = useState('')
   const [reason, setReason] = useState('')
@@ -16,11 +17,12 @@ export default function AddFunds() {
     e.preventDefault()
     setError('')
     if (!amount || Number(amount) <= 0) return setError('Enter a valid amount')
+    if (!fundId) return
 
     setLoading(true)
     try {
-      await addFundDeposit(Number(amount), reason)
-      navigate('/group-fund')
+      await addFundDeposit(fundId, Number(amount), reason)
+      navigate(`/group-fund/${fundId}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add funds')
     } finally {
@@ -58,7 +60,7 @@ export default function AddFunds() {
             type="text"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="e.g. September contribution — all 7 members"
+            placeholder="e.g. September contribution — all members"
             className="w-full px-3 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </Card>
