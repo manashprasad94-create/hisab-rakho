@@ -66,6 +66,20 @@ export async function checkReciprocalPending(friendId: string, amount: number) {
   return data && data.length > 0 ? data[0] : null
 }
 // Create a transaction. direction: 'i_paid' means current user paid for friend (friend owes current user).
+// Create the same transaction amount individually for multiple friends (not split)
+export async function createBulkTransactions(
+  friendIds: string[],
+  amount: number,
+  reason: string,
+  category: string
+) {
+  const results = []
+  for (const friendId of friendIds) {
+    const result = await createTransaction(friendId, amount, reason, category, 'i_paid')
+    results.push(result)
+  }
+  return results
+}
 // 'they_paid' means friend paid for current user (current user owes friend).
 export async function createTransaction(
   friendId: string,

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Users, Search } from 'lucide-react'
 import { listFriends, searchUserByEmail, searchUserByPhone, sendFriendRequest } from '../lib/friends'
-import { createTransaction, createGroupExpense, checkReciprocalPending, acceptTransaction } from '../lib/transactions'
+import { createTransaction, createGroupExpense, createBulkTransactions, checkReciprocalPending, acceptTransaction } from '../lib/transactions'
 import { createExternalTransaction } from '../lib/externalTransactions'
 import Card from '../components/card'
 import Button from '../components/Button'
@@ -19,7 +19,7 @@ export default function AddTransaction() {
   const [reason, setReason] = useState('')
   const [category, setCategory] = useState('other')
   const [direction] = useState<'i_paid' | 'they_paid'>('i_paid')
-  const [mode, setMode] = useState<'single' | 'group'>('single')
+  const [mode, setMode] = useState<'single' | 'group' | 'bulk'>('single')
   const [selectedFriends, setSelectedFriends] = useState<string[]>([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -84,6 +84,10 @@ export default function AddTransaction() {
         if (selectedFriends.length === 0) return setError('Select at least one friend')
         await createGroupExpense(selectedFriends, Number(amount), reason, category)
         navigate('/')
+      } else if (mode === 'bulk') {
+        if (selectedFriends.length === 0) return setError('Select at least one friend')
+        await createBulkTransactions(selectedFriends, Number(amount), reason, category)
+        navigate('/')
       } else {
         if (!friendId) return setError('Select a friend')
 
@@ -132,7 +136,16 @@ export default function AddTransaction() {
             mode === 'group' ? 'bg-primary text-white border-primary' : 'border-border text-text-muted'
           }`}
         >
-          <Users size={14} /> Split with Group
+          <Users size={14} /> Split
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('bulk')}
+          className={`flex-1 py-2 rounded-xl font-medium border text-sm transition flex items-center justify-center gap-1.5 ${
+            mode === 'bulk' ? 'bg-primary text-white border-primary' : 'border-border text-text-muted'
+          }`}
+        >
+          <Users size={14} /> Same Amount Each
         </button>
       </div>
 
@@ -298,12 +311,12 @@ export default function AddTransaction() {
           ) : (
             <div className="flex gap-2 overflow-x-auto pb-1 mb-4">
               {friends.map((f) => {
-                const isSelected = mode === 'group' ? selectedFriends.includes(f.friend.id) : friendId === f.friend.id
+                const isSelected = (mode === 'group' || mode === 'bulk') ? selectedFriends.includes(f.friend.id) : friendId === f.friend.id
                 return (
                   <button
                     key={f.friend.id}
                     type="button"
-                    onClick={() => (mode === 'group' ? toggleFriendSelection(f.friend.id) : setFriendId(f.friend.id))}
+                    onClick={() => ((mode === 'group' || mode === 'bulk') ? toggleFriendSelection(f.friend.id) : setFriendId(f.friend.id))}
                     className={`flex flex-col items-center gap-1 shrink-0 ${isSelected ? '' : 'opacity-60'}`}
                   >
                     <div className={`rounded-full ${isSelected ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
@@ -319,6 +332,11 @@ export default function AddTransaction() {
             <p className="text-xs text-text-muted mb-4">
               Split ₹{amount} between you + {selectedFriends.length} friend{selectedFriends.length > 1 ? 's' : ''} = ₹
               {(Number(amount) / (selectedFriends.length + 1)).toFixed(2)} each
+            </p>
+          )}
+                    {mode === 'bulk' && selectedFriends.length > 0 && amount && (
+            <p className="text-xs text-text-muted mb-4">
+              Each of {selectedFriends.length} friend{selectedFriends.length > 1 ? 's' : ''} will get their own ₹{amount} transaction
             </p>
           )}
 
@@ -366,6 +384,11 @@ export default function AddTransaction() {
           {mode === 'group' && (
             <p className="text-xs text-text-muted bg-bg-soft p-3 rounded-xl">
               You paid the full amount, split shows what each friend owes you.
+            </p>
+          )}
+                    {mode === 'bulk' && (
+            <p className="text-xs text-text-muted bg-bg-soft p-3 rounded-xl">
+              Each selected friend will owe you the full ₹{amount || '0'} separately.
             </p>
           )}
         </Card>
