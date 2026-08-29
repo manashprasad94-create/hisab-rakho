@@ -45,6 +45,21 @@ import { listFriends } from './lib/friends'
 import Avatar from './components/Avatar'
 
 
+function RootRoute() {
+  const { user, loading } = useAuthStore()
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
+  }
+
+  if (user) {
+    return <Navigate to="/dashboard" replace />
+  }
+
+  return <LandingPage />
+}
+
+
 /* =========================================================
    PROTECTED ROUTE
    ========================================================= */
@@ -466,11 +481,11 @@ function App() {
             PUBLIC ROUTES
             ================================================= */}
 
-        {/* Landing page */}
+        {/* Landing page — redirects to Dashboard if already logged in */}
 
         <Route
           path="/"
-          element={<LandingPage />}
+          element={<RootRoute />}
         />
 
 
