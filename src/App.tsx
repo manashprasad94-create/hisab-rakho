@@ -34,10 +34,12 @@ import Expenses from './pages/Expenses'
 import AddExpense from './pages/AddExpense'
 import BalanceBreakdown from './pages/BalanceBreakdown'
 import PersonalNotes from './pages/PersonalNotes'
+import GroupFundsList from './pages/GroupFundsList'
 import GroupFund from './pages/GroupFund'
 import AddFunds from './pages/AddFunds'
 import AddFundExpense from './pages/AddFundExpense'
 import GroupFundHistory from './pages/GroupFundHistory'
+import FundMembers from './pages/FundMembers'
 import { PiggyBank } from 'lucide-react'
 import ShareTarget from './pages/ShareTarget'
 
@@ -288,7 +290,7 @@ function Dashboard() {
           GROUP FUND LINK
           =================================================== */}
 
-      <Card onClick={() => navigate('/group-fund')} className="p-4 mb-5 flex items-center gap-3">
+      <Card onClick={() => navigate('/group-funds')} className="p-4 mb-5 flex items-center gap-3">
         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
           <PiggyBank size={18} className="text-primary" />
         </div>
@@ -628,7 +630,15 @@ function App() {
           }
         />
         <Route
-          path="/group-fund"
+          path="/group-funds"
+          element={
+            <ProtectedRoute>
+              <GroupFundsList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/group-fund/:fundId"
           element={
             <ProtectedRoute>
               <GroupFund />
@@ -636,7 +646,7 @@ function App() {
           }
         />
         <Route
-          path="/group-fund/add-funds"
+          path="/group-fund/:fundId/add-funds"
           element={
             <ProtectedRoute>
               <AddFunds />
@@ -644,7 +654,7 @@ function App() {
           }
         />
         <Route
-          path="/group-fund/add-expense"
+          path="/group-fund/:fundId/add-expense"
           element={
             <ProtectedRoute>
               <AddFundExpense />
@@ -652,10 +662,18 @@ function App() {
           }
         />
         <Route
-          path="/group-fund/history"
+          path="/group-fund/:fundId/history"
           element={
             <ProtectedRoute>
               <GroupFundHistory />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/group-fund/:fundId/members"
+          element={
+            <ProtectedRoute>
+              <FundMembers />
             </ProtectedRoute>
           }
         />

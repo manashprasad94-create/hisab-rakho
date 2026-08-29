@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, UtensilsCrossed, ShoppingBag, MoreHorizontal, Zap, Wrench } from 'lucide-react'
 import { addFundExpense } from '../lib/groupFund'
 import Card from '../components/card'
@@ -14,6 +14,7 @@ const CATEGORIES = [
 ]
 
 export default function AddFundExpense() {
+  const { fundId } = useParams<{ fundId: string }>()
   const navigate = useNavigate()
   const [amount, setAmount] = useState('')
   const [reason, setReason] = useState('')
@@ -26,11 +27,12 @@ export default function AddFundExpense() {
     setError('')
     if (!amount || Number(amount) <= 0) return setError('Enter a valid amount')
     if (!reason.trim()) return setError('Enter what this was spent on')
+    if (!fundId) return
 
     setLoading(true)
     try {
-      await addFundExpense(Number(amount), reason, category)
-      navigate('/group-fund')
+      await addFundExpense(fundId, Number(amount), reason, category)
+      navigate(`/group-fund/${fundId}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add expense')
     } finally {
