@@ -26,7 +26,7 @@ serve(async (req) => {
         sender: { name: 'Hisab Kitab', email: senderEmail },
         to: [{ email: toEmail, name: toName || '' }],
         subject: 'Hisab Kitab — Reminder',
-        htmlContent: `<p>Hi ${toName || ''},</p><p>${message}</p><p>— Sent via Hisab Kitab</p>`,
+        htmlContent: `<p>Hi ${toName || ''},</p><p>${message.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1">$1</a>')}</p><p>— Sent via Hisab Kitab</p>`,
       }),
     })
 

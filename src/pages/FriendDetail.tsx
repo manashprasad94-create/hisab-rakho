@@ -245,7 +245,7 @@ export default function FriendDetail() {
                               <Pencil size={12} /> Edit
                             </button>
                             <button
-                              onClick={() => handleRemind(`${profile?.full_name || 'Someone'} is reminding you to accept the payment of ₹${t.amount} — ${t.reason || 'no reason'} — in Hisab Kitab`, t.id)}
+                              onClick={() => handleRemind(`${profile?.full_name || 'Someone'} is reminding you to accept the payment of ₹${t.amount} — ${t.reason || 'no reason'} — in Hisab Kitab. Open here: ${window.location.origin}/friends/${user?.id}`, t.id)}
                               disabled={remindedIds.has(t.id)}
                               className="text-xs text-primary font-medium disabled:text-text-muted disabled:opacity-70"
                             >
@@ -317,7 +317,7 @@ export default function FriendDetail() {
                             <div className="flex items-center justify-between w-full">
                               <span className="text-xs text-text-muted">Waiting for confirmation...</span>
                               <button
-                                onClick={() => handleRemind(`${profile?.full_name || 'Someone'} is reminding you to confirm the payment of ₹${t.remaining_amount} — ${t.reason || 'no reason'} — in Hisab Kitab`, t.id)}
+                                onClick={() => handleRemind(`${profile?.full_name || 'Someone'} is reminding you to confirm the payment of ₹${t.remaining_amount} — ${t.reason || 'no reason'} — in Hisab Kitab. Open here: ${window.location.origin}/friends/${user?.id}`, t.id)}
                                 disabled={remindedIds.has(t.id)}
                                 className="text-xs text-primary font-medium disabled:text-text-muted disabled:opacity-70"
                               >
