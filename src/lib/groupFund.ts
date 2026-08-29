@@ -19,6 +19,7 @@ export async function listMyFunds() {
 
 export async function createFund(name: string) {
   const userId = useAuthStore.getState().user?.id
+  console.log('createFund userId:', userId)
   if (!userId) throw new Error('Not logged in')
 
   const { data: fund, error: fundError } = await supabase
