@@ -25,7 +25,6 @@ export default function Friends() {
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [pageLoading, setPageLoading] = useState(true)
-  const [filterQuery, setFilterQuery] = useState('')
 
   const loadData = async () => {
     const [f, p] = await Promise.all([listFriends(), listPendingRequests()])
@@ -168,19 +167,6 @@ export default function Friends() {
         <UserPlus size={14} /> Your Friends
       </h2>
 
-      {friends.length > 3 && (
-        <div className="relative mb-3">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-          <input
-            type="text"
-            value={filterQuery}
-            onChange={(e) => setFilterQuery(e.target.value)}
-            placeholder="Search your friends..."
-            className="w-full pl-8 pr-3 py-2 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-        </div>
-      )}
-
       {pageLoading ? (
         <div className="space-y-2">
           {[1, 2].map((i) => <div key={i} className="h-16 bg-white/60 rounded-2xl animate-pulse border border-border" />)}
@@ -191,9 +177,7 @@ export default function Friends() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {friends
-            .filter((f) => f.friend.full_name.toLowerCase().includes(filterQuery.toLowerCase()))
-            .map((f) => (
+          {friends.map((f) => (
             <Card
               key={f.friendshipId}
               onClick={() => navigate(`/friends/${f.friend.id}`)}

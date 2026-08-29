@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Wallet, Trash2, UtensilsCrossed, Fuel, ShoppingBag, Plane, Film, HeartPulse, GraduationCap, MoreHorizontal, Search, Download} from 'lucide-react'
+import { Plus, Wallet, Trash2, UtensilsCrossed, Fuel, ShoppingBag, Plane, Film, HeartPulse, GraduationCap, MoreHorizontal } from 'lucide-react'
 import { listExpenses, deleteExpense, getCategorySummary } from '../lib/expenses'
 import Card from '../components/card'
 import Button from '../components/Button'
 import EmptyState from '../components/EmptyState'
-import { exportToCsv } from '../lib/exportCsv'
 
 const CATEGORY_ICONS: Record<string, any> = {
   food: UtensilsCrossed,
@@ -27,7 +26,6 @@ export default function Expenses() {
     count: 0,
   })
   const [loading, setLoading] = useState(true)
-  const [filterQuery, setFilterQuery] = useState('')
 
   const loadData = async () => {
     const [list, sum] = await Promise.all([listExpenses(), getCategorySummary()])
@@ -40,16 +38,9 @@ export default function Expenses() {
     loadData()
   }, [])
 
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
-
-  const handleDeleteClick = (id: string) => {
-    if (confirmDeleteId === id) {
-      deleteExpense(id).then(loadData)
-      setConfirmDeleteId(null)
-    } else {
-      setConfirmDeleteId(id)
-      setTimeout(() => setConfirmDeleteId((cur) => (cur === id ? null : cur)), 3000)
-    }
+  const handleDelete = async (id: string) => {
+    await deleteExpense(id)
+    loadData()
   }
 
   return (
@@ -90,45 +81,11 @@ export default function Expenses() {
         </Card>
       )}
 
-      <div className="flex gap-2 mb-5">
-        <Button onClick={() => navigate('/add-expense')} className="flex-1 flex items-center justify-center gap-2">
-          <Plus size={18} /> Add Expense
-        </Button>
-        {expenses.length > 0 && (
-          <Button
-            variant="secondary"
-            onClick={() =>
-              exportToCsv(
-                'hisab-kitab-expenses.csv',
-                expenses.map((e) => ({
-                  date: e.spent_on,
-                  category: e.category,
-                  amount: e.amount,
-                  note: e.note,
-                }))
-              )
-            }
-            className="flex items-center justify-center gap-2 px-4"
-          >
-            <Download size={18} />
-          </Button>
-        )}
-      </div>
+      <Button onClick={() => navigate('/add-expense')} className="w-full mb-5 flex items-center justify-center gap-2">
+        <Plus size={18} /> Add Expense
+      </Button>
 
       <h2 className="text-sm font-semibold text-text-muted mb-3">All Expenses</h2>
-
-      {expenses.length > 3 && (
-        <div className="relative mb-3">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-          <input
-            type="text"
-            value={filterQuery}
-            onChange={(e) => setFilterQuery(e.target.value)}
-            placeholder="Search by note or category..."
-            className="w-full pl-8 pr-3 py-2 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-        </div>
-      )}
 
       {loading ? (
         <div className="space-y-2">
@@ -140,13 +97,7 @@ export default function Expenses() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {expenses
-            .filter(
-              (e) =>
-                e.note?.toLowerCase().includes(filterQuery.toLowerCase()) ||
-                e.category?.toLowerCase().includes(filterQuery.toLowerCase())
-            )
-            .map((e) => {
+          {expenses.map((e) => {
             const Icon = CATEGORY_ICONS[e.category] || MoreHorizontal
             return (
               <Card key={e.id} className="p-3 flex justify-between items-center">
@@ -161,11 +112,8 @@ export default function Expenses() {
                 </div>
                 <div className="flex items-center gap-3">
                   <p className="font-semibold text-sm">₹{Number(e.amount).toFixed(2)}</p>
-                  <button
-                    onClick={() => handleDeleteClick(e.id)}
-                    className={`transition ${confirmDeleteId === e.id ? 'text-owe font-medium text-xs px-2 py-1 bg-owe/10 rounded-lg' : 'text-text-muted hover:text-owe'}`}
-                  >
-                    {confirmDeleteId === e.id ? 'Confirm?' : <Trash2 size={15} />}
+                  <button onClick={() => handleDelete(e.id)} className="text-text-muted hover:text-owe transition">
+                    <Trash2 size={15} />
                   </button>
                 </div>
               </Card>

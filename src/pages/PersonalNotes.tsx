@@ -26,16 +26,9 @@ export default function PersonalNotes() {
     loadData()
   }
 
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
-
-  const handleDeleteClick = (id: string) => {
-    if (confirmDeleteId === id) {
-      deleteExternalTransaction(id).then(loadData)
-      setConfirmDeleteId(null)
-    } else {
-      setConfirmDeleteId(id)
-      setTimeout(() => setConfirmDeleteId((cur) => (cur === id ? null : cur)), 3000)
-    }
+  const handleDelete = async (id: string) => {
+    await deleteExternalTransaction(id)
+    loadData()
   }
 
   const totalTheyOwe = notes
@@ -97,11 +90,8 @@ export default function PersonalNotes() {
                     <Button onClick={() => handleMarkSettled(n.id)} className="text-xs py-1.5 px-3 flex-1">
                       Mark as Settled
                     </Button>
-                    <button
-                      onClick={() => handleDeleteClick(n.id)}
-                      className={`transition px-2 ${confirmDeleteId === n.id ? 'text-owe font-medium text-xs bg-owe/10 rounded-lg py-1' : 'text-text-muted hover:text-owe'}`}
-                    >
-                      {confirmDeleteId === n.id ? 'Confirm?' : <Trash2 size={15} />}
+                    <button onClick={() => handleDelete(n.id)} className="text-text-muted hover:text-owe transition px-2">
+                      <Trash2 size={15} />
                     </button>
                   </div>
                 )}

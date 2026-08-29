@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, Receipt, CheckCircle2, Pencil } from 'lucide-react'
+import { ArrowLeft, Plus, Receipt, CheckCircle2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
 import {
@@ -11,7 +11,6 @@ import {
   getPendingPaymentRecords,
   acceptTransaction,
   rejectTransaction,
-  editPendingTransaction,
 } from '../lib/transactions'
 import { generateUpiLink } from '../lib/upi'
 import Card from '../components/card'
@@ -112,22 +111,6 @@ export default function FriendDetail() {
     loadData()
   }
 
-    const [editingId, setEditingId] = useState<string | null>(null)
-  const [editAmount, setEditAmount] = useState('')
-  const [editReason, setEditReason] = useState('')
-
-  const startEdit = (t: any) => {
-    setEditingId(t.id)
-    setEditAmount(String(t.amount))
-    setEditReason(t.reason || '')
-  }
-
-  const saveEdit = async (t: any) => {
-    if (!editAmount || Number(editAmount) <= 0) return
-    await editPendingTransaction(t.id, Number(editAmount), editReason, t.category)
-    setEditingId(null)
-    loadData()
-  }
   const [remindedIds, setRemindedIds] = useState<Set<string>>(new Set())
 
   const handleRemind = async (message: string, id: string) => {
@@ -237,44 +220,16 @@ export default function FriendDetail() {
                         </div>
                       )}
 
-                      {t.status === 'pending_acceptance' && iCreatedIt && editingId !== t.id && (
+                      {t.status === 'pending_acceptance' && iCreatedIt && (
                         <div className="mt-2 flex items-center justify-between">
                           <p className="text-xs text-text-muted">Waiting for {friend.full_name} to accept...</p>
-                          <div className="flex items-center gap-3">
-                            <button onClick={() => startEdit(t)} className="text-xs text-primary font-medium flex items-center gap-1">
-                              <Pencil size={12} /> Edit
-                            </button>
-                            <button
-                              onClick={() => handleRemind(`${profile?.full_name || 'Someone'} is reminding you to accept the payment of ₹${t.amount} — ${t.reason || 'no reason'} — in Hisab Kitab`, t.id)}
-                              disabled={remindedIds.has(t.id)}
-                              className="text-xs text-primary font-medium disabled:text-text-muted disabled:opacity-70"
-                            >
-                              {remindedIds.has(t.id) ? 'Reminded ✓' : 'Remind'}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {t.status === 'pending_acceptance' && iCreatedIt && editingId === t.id && (
-                        <div className="mt-3 p-3 bg-bg-soft rounded-xl">
-                          <label className="block text-xs mb-1 text-text-muted font-medium">Amount</label>
-                          <input
-                            type="number"
-                            value={editAmount}
-                            onChange={(e) => setEditAmount(e.target.value)}
-                            className="w-full mb-2 px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                          />
-                          <label className="block text-xs mb-1 text-text-muted font-medium">Reason</label>
-                          <input
-                            type="text"
-                            value={editReason}
-                            onChange={(e) => setEditReason(e.target.value)}
-                            className="w-full mb-3 px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                          />
-                          <div className="flex gap-2">
-                            <Button onClick={() => saveEdit(t)} className="text-xs py-1.5 px-3 flex-1">Save</Button>
-                            <Button variant="secondary" onClick={() => setEditingId(null)} className="text-xs py-1.5 px-3 flex-1">Cancel</Button>
-                          </div>
+                          <button
+                            onClick={() => handleRemind(`${profile?.full_name || 'Someone'} is reminding you to accept the payment of ₹${t.amount} — ${t.reason || 'no reason'} — in Hisab Kitab`, t.id)}
+                            disabled={remindedIds.has(t.id)}
+                            className="text-xs text-primary font-medium disabled:text-text-muted disabled:opacity-70"
+                          >
+                            {remindedIds.has(t.id) ? 'Reminded ✓' : 'Remind'}
+                          </button>
                         </div>
                       )}
 

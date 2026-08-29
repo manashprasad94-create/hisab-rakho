@@ -121,24 +121,6 @@ export async function createTransaction(
   return data
 }
 
-// Edit a transaction while it's still pending_acceptance (only the creator can do this)
-export async function editPendingTransaction(
-  transactionId: string,
-  amount: number,
-  reason: string,
-  category: string
-) {
-  const { data, error } = await supabase
-    .from('friend_transactions')
-    .update({ amount, remaining_amount: amount, reason, category, updated_at: new Date().toISOString() })
-    .eq('id', transactionId)
-    .eq('status', 'pending_acceptance')
-    .select()
-    .single()
-  if (error) throw error
-  return data
-}
-
 // Accept a pending_acceptance transaction — only the non-creator party should call this
 export async function acceptTransaction(transactionId: string) {
   const userId = useAuthStore.getState().user?.id

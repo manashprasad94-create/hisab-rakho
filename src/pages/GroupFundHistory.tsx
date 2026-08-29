@@ -1,25 +1,21 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, ArrowDownLeft, ArrowUpRight, Receipt, Download } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { ArrowLeft, ArrowDownLeft, ArrowUpRight, Receipt } from 'lucide-react'
 import { listFundTransactions } from '../lib/groupFund'
-import { exportToCsv } from '../lib/exportCsv'
 import Card from '../components/card'
-import Button from '../components/Button'
 import EmptyState from '../components/EmptyState'
 
 export default function GroupFundHistory() {
-  const { fundId } = useParams<{ fundId: string }>()
   const navigate = useNavigate()
   const [txns, setTxns] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!fundId) return
-    listFundTransactions(fundId).then((data) => {
+    listFundTransactions().then((data) => {
       setTxns(data)
       setLoading(false)
     })
-  }, [fundId])
+  }, [])
 
   const groupedByDate = txns.reduce((groups: Record<string, any[]>, t) => {
     const dateKey = new Date(t.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -33,31 +29,7 @@ export default function GroupFundHistory() {
       <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-text-muted mb-3 text-sm">
         <ArrowLeft size={16} /> Back
       </button>
-
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-semibold">Fund History</h1>
-        {txns.length > 0 && (
-          <Button
-            variant="secondary"
-            onClick={() =>
-              exportToCsv(
-                'hisab-kitab-fund-history.csv',
-                txns.map((t) => ({
-                  date: new Date(t.created_at).toLocaleDateString('en-IN'),
-                  type: t.type,
-                  amount: t.amount,
-                  reason: t.reason,
-                  category: t.category || '',
-                  added_by: t.profiles?.full_name || '',
-                }))
-              )
-            }
-            className="text-xs py-1.5 px-3 flex items-center gap-1.5"
-          >
-            <Download size={14} /> Export
-          </Button>
-        )}
-      </div>
+      <h1 className="text-xl font-semibold mb-4">Fund History</h1>
 
       {loading ? (
         <div className="space-y-2">
