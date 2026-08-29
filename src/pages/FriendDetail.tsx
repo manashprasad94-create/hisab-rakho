@@ -276,7 +276,7 @@ export default function FriendDetail() {
                                 disabled={remindedIds.has(t.id)}
                                 className="text-xs text-primary font-medium disabled:text-text-muted disabled:opacity-70"
                               >
-                                {remindedIds.has(t.id) ? 'Reminded ✓' : 'Remind'}
+                                {remindedIds.has(t.id) ? 'Reminded ' : 'Remind'}
                               </button>
                             </div>
                           )}
