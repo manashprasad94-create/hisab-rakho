@@ -13,6 +13,24 @@ export async function getMyFundRole(): Promise<'owner' | 'admin' | 'member' | nu
   if (error || !data) return null
   return data.role
 }
+export async function createFund(name: string) {
+  const userId = useAuthStore.getState().user?.id
+  if (!userId) throw new Error('Not logged in')
+
+  const { data: fund, error: fundError } = await supabase
+    .from('group_funds')
+    .insert({ name, created_by: userId })
+    .select()
+    .single()
+  if (fundError) throw fundError
+
+  const { error: memberError } = await supabase
+    .from('group_fund_members')
+    .insert({ fund_id: fund.id, user_id: userId, role: 'owner' })
+  if (memberError) throw memberError
+
+  return fund
+}
 
 export async function listFundTransactions() {
   const { data, error } = await supabase
