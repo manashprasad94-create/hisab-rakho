@@ -22,7 +22,7 @@ import { sendEmailReminder } from '../lib/notify'
 export default function FriendDetail() {
   const { friendId } = useParams<{ friendId: string }>()
   const navigate = useNavigate()
-  const { user } = useAuthStore()
+  const { user , profile } = useAuthStore()
   const [friend, setFriend] = useState<any>(null)
   const [transactions, setTransactions] = useState<any[]>([])
   const [pendingByTxn, setPendingByTxn] = useState<Record<string, any[]>>({})
@@ -224,7 +224,7 @@ export default function FriendDetail() {
                         <div className="mt-2 flex items-center justify-between">
                           <p className="text-xs text-text-muted">Waiting for {friend.full_name} to accept...</p>
                           <button
-                            onClick={() => handleRemind(`Please accept the transaction of ₹${t.amount} — ${t.reason || 'no reason'}`, t.id)}
+                            onClick={() => handleRemind(`${profile?.full_name || 'Someone'} is reminding you to accept the payment of ₹${t.amount} — ${t.reason || 'no reason'} — in Hisab Kitab`, t.id)}
                             disabled={remindedIds.has(t.id)}
                             className="text-xs text-primary font-medium disabled:text-text-muted disabled:opacity-70"
                           >
@@ -272,7 +272,7 @@ export default function FriendDetail() {
                             <div className="flex items-center justify-between w-full">
                               <span className="text-xs text-text-muted">Waiting for confirmation...</span>
                               <button
-                                onClick={() => handleRemind(`Please confirm the payment of ₹${t.remaining_amount} — ${t.reason || 'no reason'}`, t.id)}
+                                onClick={() => handleRemind(`${profile?.full_name || 'Someone'} is reminding you to confirm the payment of ₹${t.remaining_amount} — ${t.reason || 'no reason'} — in Hisab Kitab`, t.id)}
                                 disabled={remindedIds.has(t.id)}
                                 className="text-xs text-primary font-medium disabled:text-text-muted disabled:opacity-70"
                               >
