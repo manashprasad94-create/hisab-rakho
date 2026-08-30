@@ -45,8 +45,9 @@ import ShareTarget from './pages/ShareTarget'
 
 import { listFriends } from './lib/friends'
 import Avatar from './components/Avatar'
-import { listUpdates, markUpdateRead } from './lib/updates'
+import { listUpdates, getUnreadCount } from './lib/updates'
 import { Bell } from 'lucide-react'
+import Updates from './pages/Updates'
 
 
 function RootRoute() {
@@ -147,7 +148,7 @@ function Dashboard() {
   const [toReceive, setToReceive] = useState(0)
   const [toPay, setToPay] = useState(0)
   const [friends, setFriends] = useState<any[]>([])
-  const [updates, setUpdates] = useState<any[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(true)
 
   const navigate = useNavigate()
@@ -183,7 +184,7 @@ function Dashboard() {
       setFriends(f.slice(0, 5))
     })
 
-    listUpdates().then(setUpdates)
+    getUnreadCount().then(setUnreadCount)
   }
 
 
@@ -215,7 +216,7 @@ function Dashboard() {
           table: 'notifications',
         },
         () => {
-          listUpdates().then(setUpdates)
+          getUnreadCount().then(setUnreadCount)
         }
       )
       .subscribe()
@@ -224,12 +225,6 @@ function Dashboard() {
       supabase.removeChannel(channel)
     }
   }, [user])
-
-  const handleUpdateClick = async (u: any) => {
-    if (!u.read) await markUpdateRead(u.id)
-    setUpdates((prev) => prev.map((x) => (x.id === u.id ? { ...x, read: true } : x)))
-    if (u.action_url) navigate(u.action_url)
-  }
 
 
   return (
@@ -309,32 +304,22 @@ function Dashboard() {
       </Button>
 
             {/* ===================================================
-          UPDATES
+          UPDATES CARD
           =================================================== */}
 
-      {updates.length > 0 && (
-        <div className="mb-5">
-          <h2 className="text-sm font-semibold text-text-muted mb-2 flex items-center gap-2">
-            <Bell size={14} /> Updates
-          </h2>
-          <div className="space-y-2">
-            {updates.slice(0, 5).map((u) => (
-              <Card
-                key={u.id}
-                onClick={() => handleUpdateClick(u)}
-                className={`p-3 ${!u.read ? 'border-primary/40 bg-primary/5' : ''}`}
-              >
-                <div className="flex items-start gap-2">
-                  {!u.read && <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />}
-                  <div className={!u.read ? '' : 'pl-3.5'}>
-                    <p className="text-sm font-medium">{u.title}</p>
-                    <p className="text-xs text-text-muted">{u.body}</p>
-                  </div>
-                </div>
-              </Card>
-            ))}
+      {unreadCount > 0 && (
+        <Card onClick={() => navigate('/updates')} className="p-4 mb-5 flex items-center gap-3 border-primary/30">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 relative">
+            <Bell size={18} className="text-primary" />
+            <span className="absolute -top-1 -right-1 bg-owe text-white text-[10px] font-semibold rounded-full w-4 h-4 flex items-center justify-center">
+              {unreadCount > 3 ? '3+' : unreadCount}
+            </span>
           </div>
-        </div>
+          <div>
+            <p className="font-medium text-sm">New updates received</p>
+            <p className="text-xs text-text-muted">{unreadCount} unseen {unreadCount === 1 ? 'update' : 'updates'}</p>
+          </div>
+        </Card>
       )}
 
       {/* ===================================================
@@ -685,6 +670,14 @@ function App() {
           element={
             <ProtectedRoute>
               <GroupFundsList />
+            </ProtectedRoute>
+          }
+        />
+                <Route
+          path="/updates"
+          element={
+            <ProtectedRoute>
+              <Updates />
             </ProtectedRoute>
           }
         />

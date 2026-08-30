@@ -15,6 +15,19 @@ export async function listUpdates(limit = 15) {
   return data
 }
 
+export async function getUnreadCount() {
+  const userId = useAuthStore.getState().user?.id
+  if (!userId) return 0
+
+  const { count, error } = await supabase
+    .from('notifications')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('read', false)
+  if (error) return 0
+  return count || 0
+}
+
 export async function markUpdateRead(id: string) {
   const { error } = await supabase.from('notifications').update({ read: true }).eq('id', id)
   if (error) throw error
