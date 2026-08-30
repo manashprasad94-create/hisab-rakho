@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, PiggyBank, Plus, MinusCircle, History, Users } from 'lucide-react'
+import { ArrowLeft, PiggyBank, Plus, MinusCircle, History, Users, ChevronLeft, ChevronRight } from 'lucide-react'
 import { getMyRoleInFund, getFundSummary } from '../lib/groupFund'
 import Card from '../components/card'
 import Button from '../components/Button'
@@ -12,6 +12,7 @@ export default function GroupFund() {
   const [summary, setSummary] = useState({ total: 0, used: 0, remaining: 0 })
   const [loading, setLoading] = useState(true)
   const [notMember, setNotMember] = useState(false)
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
 
   const loadData = async () => {
     if (!fundId) return
@@ -22,14 +23,22 @@ export default function GroupFund() {
       return
     }
     setRole(r)
-    const s = await getFundSummary(fundId)
+    const s = await getFundSummary(fundId, selectedMonth)
     setSummary(s)
     setLoading(false)
   }
 
   useEffect(() => {
     loadData()
-  }, [fundId])
+  }, [fundId, selectedMonth])
+
+  const changeMonth = (delta: number) => {
+    const [year, month] = selectedMonth.split('-').map(Number)
+    const newDate = new Date(year, month - 1 + delta, 1)
+    setSelectedMonth(newDate.toISOString().slice(0, 7))
+  }
+
+  const monthLabel = new Date(selectedMonth + '-01').toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
 
   if (loading) {
     return (
@@ -68,7 +77,16 @@ export default function GroupFund() {
       <p className="text-xs text-text-muted mb-4">Shared with your group · {role}</p>
 
       <div className="bg-primary text-white rounded-2xl p-6 mb-4 shadow-sm">
-        <p className="text-sm opacity-80">Remaining</p>
+        <div className="flex items-center justify-between mb-2">
+          <button onClick={() => changeMonth(-1)} className="p-1">
+            <ChevronLeft size={18} />
+          </button>
+          <p className="text-sm font-medium">{monthLabel}</p>
+          <button onClick={() => changeMonth(1)} className="p-1">
+            <ChevronRight size={18} />
+          </button>
+        </div>
+        <p className="text-sm opacity-80">Remaining this month</p>
         <p className="text-3xl font-semibold mt-1">₹{summary.remaining.toFixed(2)}</p>
         <div className="flex justify-between mt-4 pt-4 border-t border-white/20 text-sm">
           <div>

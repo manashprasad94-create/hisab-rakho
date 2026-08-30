@@ -88,11 +88,14 @@ export async function listFundTransactions(fundId: string) {
   return data
 }
 
-export async function getFundSummary(fundId: string) {
+export async function getFundSummary(fundId: string, month?: string) {
   const txns = await listFundTransactions(fundId)
+  const targetMonth = month || new Date().toISOString().slice(0, 7)
+  const scoped = txns.filter((t) => t.created_at.startsWith(targetMonth))
+
   let totalDeposits = 0
   let totalExpenses = 0
-  for (const t of txns) {
+  for (const t of scoped) {
     if (t.type === 'deposit') totalDeposits += Number(t.amount)
     else totalExpenses += Number(t.amount)
   }
