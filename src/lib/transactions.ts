@@ -115,7 +115,8 @@ export async function createTransaction(
   sendNotification(
     recipientId,
     'New transaction request',
-    `${creatorName} wants to record ₹${amount} — ${reason || 'no reason'}. Please review.`
+    `${creatorName} wants to record ₹${amount} — ${reason || 'no reason'}. Please review.`,
+    `/friends/${userId}`
   )
 
   return data
@@ -152,8 +153,14 @@ export async function acceptTransaction(transactionId: string) {
 
   if (data && data.created_by !== userId) {
     const accepterName = useAuthStore.getState().profile?.full_name || 'Someone'
-    sendNotification(data.created_by, 'Transaction accepted', `${accepterName} accepted your transaction of ₹${data.amount}`)
+    sendNotification(
+      data.created_by,
+      'Transaction accepted',
+      `${accepterName} accepted your transaction of ₹${data.amount}`,
+      `/friends/${userId}`
+    )
   }
+
   return data
 }
 
@@ -172,12 +179,13 @@ export async function rejectTransaction(transactionId: string) {
     .eq('id', transactionId)
   if (deleteError) throw deleteError
 
-  if (data) {
-    sendNotification(data.created_by, 'Transaction rejected', `Your transaction of ₹${data.amount} was rejected`)
+    if (data) {
+    const userId = useAuthStore.getState().user?.id
+    sendNotification(data.created_by, 'Transaction rejected', `Your transaction of ₹${data.amount} was rejected`, `/friends/${userId}`)
   }
 }
 
-
+// Reject a claimed payment
 // List all transactions involving current user, with friend profile joined
 export async function listTransactionsWithFriend(friendId: string) {
   const userId = useAuthStore.getState().user?.id
@@ -233,10 +241,12 @@ export async function markAsPaid(transactionId: string, amount: number) {
 
   if (txn) {
     const payerName = useAuthStore.getState().profile?.full_name || 'Someone'
+    const userId = useAuthStore.getState().user?.id
     sendNotification(
       txn.payee_id,
       'Payment claimed',
-      `${payerName} marked ₹${amount} as paid — please confirm`
+      `${payerName} marked ₹${amount} as paid — please confirm`,
+      `/friends/${userId}`
     )
   }
 
@@ -277,10 +287,12 @@ export async function confirmPayment(paymentRecordId: string, transactionId: str
     .single()
 
   if (paymentRecord) {
+    const userId = useAuthStore.getState().user?.id
     sendNotification(
       paymentRecord.paid_by,
       'Payment confirmed',
-      `Your payment of ₹${amount} was confirmed`
+      `Your payment of ₹${amount} was confirmed`,
+      `/friends/${userId}`
     )
   }
 }

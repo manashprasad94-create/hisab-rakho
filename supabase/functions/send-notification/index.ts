@@ -57,7 +57,7 @@ serve(async (req) => {
   }
 
   try {
-    const { recipientId, title, body } = await req.json()
+    const { recipientId, title, body, actionUrl } = await req.json()
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -111,6 +111,7 @@ serve(async (req) => {
       body,
       type: 'transaction',
       read: false,
+      action_url: actionUrl || null,
     })
 
     return new Response(JSON.stringify({ success: true, fcmResult }), {

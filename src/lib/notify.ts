@@ -11,13 +11,12 @@ export async function sendEmailReminder(toEmail: string, toName: string, message
   }
 }
 
-export async function sendNotification(recipientId: string, title: string, body: string) {
+export async function sendNotification(recipientId: string, title: string, body: string, actionUrl?: string) {
   try {
     await supabase.functions.invoke('send-notification', {
-      body: { recipientId, title, body },
+      body: { recipientId, title, body, actionUrl },
     })
   } catch (err) {
     console.error('Notification failed to send', err)
-    // don't throw — notification failure shouldn't block the main action
   }
 }

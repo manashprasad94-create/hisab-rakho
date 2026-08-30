@@ -45,6 +45,8 @@ import ShareTarget from './pages/ShareTarget'
 
 import { listFriends } from './lib/friends'
 import Avatar from './components/Avatar'
+import { listUpdates, markUpdateRead } from './lib/updates'
+import { Bell } from 'lucide-react'
 
 
 function RootRoute() {
@@ -145,6 +147,7 @@ function Dashboard() {
   const [toReceive, setToReceive] = useState(0)
   const [toPay, setToPay] = useState(0)
   const [friends, setFriends] = useState<any[]>([])
+  const [updates, setUpdates] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   const navigate = useNavigate()
@@ -179,6 +182,8 @@ function Dashboard() {
     listFriends().then((f) => {
       setFriends(f.slice(0, 5))
     })
+
+    listUpdates().then(setUpdates)
   }
 
 
@@ -202,12 +207,29 @@ function Dashboard() {
           refreshDashboard()
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+        },
+        () => {
+          listUpdates().then(setUpdates)
+        }
+      )
       .subscribe()
 
     return () => {
       supabase.removeChannel(channel)
     }
   }, [user])
+
+  const handleUpdateClick = async (u: any) => {
+    if (!u.read) await markUpdateRead(u.id)
+    setUpdates((prev) => prev.map((x) => (x.id === u.id ? { ...x, read: true } : x)))
+    if (u.action_url) navigate(u.action_url)
+  }
 
 
   return (
@@ -285,6 +307,35 @@ function Dashboard() {
         <Plus size={18} />
         Add Transaction
       </Button>
+
+            {/* ===================================================
+          UPDATES
+          =================================================== */}
+
+      {updates.length > 0 && (
+        <div className="mb-5">
+          <h2 className="text-sm font-semibold text-text-muted mb-2 flex items-center gap-2">
+            <Bell size={14} /> Updates
+          </h2>
+          <div className="space-y-2">
+            {updates.slice(0, 5).map((u) => (
+              <Card
+                key={u.id}
+                onClick={() => handleUpdateClick(u)}
+                className={`p-3 ${!u.read ? 'border-primary/40 bg-primary/5' : ''}`}
+              >
+                <div className="flex items-start gap-2">
+                  {!u.read && <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />}
+                  <div className={!u.read ? '' : 'pl-3.5'}>
+                    <p className="text-sm font-medium">{u.title}</p>
+                    <p className="text-xs text-text-muted">{u.body}</p>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ===================================================
           GROUP FUND LINK
