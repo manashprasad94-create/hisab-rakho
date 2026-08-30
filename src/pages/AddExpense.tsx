@@ -23,6 +23,7 @@ export default function AddExpense() {
   const [category, setCategory] = useState('food')
   const [note, setNote] = useState(searchParams.get('note') || '')
   const [spentOn, setSpentOn] = useState(new Date().toISOString().slice(0, 10))
+  const [paymentMode, setPaymentMode] = useState<'cash' | 'online'>('online')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -34,7 +35,7 @@ export default function AddExpense() {
 
     setLoading(true)
     try {
-      await addExpense(Number(amount), category, note, spentOn)
+      await addExpense(Number(amount), category, note, spentOn, paymentMode)
       navigate('/expenses')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add expense')
@@ -85,7 +86,27 @@ export default function AddExpense() {
             ))}
           </div>
 
-          <label className="block text-sm mb-1 text-text-muted font-medium">Date</label>
+          <label className="block text-sm mb-2 text-text-muted font-medium">Payment Mode</label>
+          <div className="flex gap-2 mb-4">
+            <button
+              type="button"
+              onClick={() => setPaymentMode('cash')}
+              className={`flex-1 py-2 rounded-xl font-medium border text-sm transition ${
+                paymentMode === 'cash' ? 'bg-primary text-white border-primary' : 'border-border text-text-muted'
+              }`}
+            >
+              Cash
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaymentMode('online')}
+              className={`flex-1 py-2 rounded-xl font-medium border text-sm transition ${
+                paymentMode === 'online' ? 'bg-primary text-white border-primary' : 'border-border text-text-muted'
+              }`}
+            >
+              Online
+            </button>
+          </div>
           <input
             type="date"
             value={spentOn}

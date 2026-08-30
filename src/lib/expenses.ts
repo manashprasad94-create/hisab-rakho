@@ -1,13 +1,13 @@
 import { supabase } from './supabase'
 import { useAuthStore } from '../store/authStore'
 
-export async function addExpense(amount: number, category: string, note: string, spentOn: string) {
+export async function addExpense(amount: number, category: string, note: string, spentOn: string, paymentMode: 'cash' | 'online' = 'online') {
   const userId = useAuthStore.getState().user?.id
   if (!userId) throw new Error('Not logged in')
 
   const { data, error } = await supabase
     .from('personal_expenses')
-    .insert({ user_id: userId, amount, category, note, spent_on: spentOn })
+    .insert({ user_id: userId, amount, category, note, spent_on: spentOn, payment_mode: paymentMode })
     .select()
     .single()
   if (error) throw error
@@ -23,6 +23,19 @@ export async function listExpenses() {
     .select('*')
     .eq('user_id', userId)
     .order('spent_on', { ascending: false })
+  if (error) throw error
+  return data
+}
+export async function updateExpense(
+  id: string,
+  updates: { amount?: number; category?: string; note?: string; spent_on?: string; payment_mode?: 'cash' | 'online' }
+) {
+  const { data, error } = await supabase
+    .from('personal_expenses')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
   if (error) throw error
   return data
 }

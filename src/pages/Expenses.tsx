@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Wallet, Trash2, UtensilsCrossed, Fuel, ShoppingBag, Plane, Film, HeartPulse, GraduationCap, MoreHorizontal, Search, Download} from 'lucide-react'
-import { listExpenses, deleteExpense, getCategorySummary } from '../lib/expenses'
+import { Plus, Wallet, Trash2, UtensilsCrossed, Fuel, ShoppingBag, Plane, Film, HeartPulse, GraduationCap, MoreHorizontal, Search, Download, ChevronLeft, ChevronRight, Pencil } from 'lucide-react'
+import { listExpenses, deleteExpense, updateExpense, getCategorySummary } from '../lib/expenses'
 import Card from '../components/card'
 import Button from '../components/Button'
 import EmptyState from '../components/EmptyState'
@@ -28,9 +28,10 @@ export default function Expenses() {
   })
   const [loading, setLoading] = useState(true)
   const [filterQuery, setFilterQuery] = useState('')
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)) // "YYYY-MM"
 
   const loadData = async () => {
-    const [list, sum] = await Promise.all([listExpenses(), getCategorySummary()])
+    const [list, sum] = await Promise.all([listExpenses(), getCategorySummary(selectedMonth)])
     setExpenses(list)
     setSummary(sum)
     setLoading(false)
@@ -38,9 +39,51 @@ export default function Expenses() {
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [selectedMonth])
+
+  const changeMonth = (delta: number) => {
+    const [year, month] = selectedMonth.split('-').map(Number)
+    const newDate = new Date(year, month - 1 + delta, 1)
+    setSelectedMonth(newDate.toISOString().slice(0, 7))
+  }
+
+  const monthLabel = new Date(selectedMonth + '-01').toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
+
+  // Filter the expense list to the selected month too, so history matches the summary
+  const monthFilteredExpenses = expenses.filter((e) => e.spent_on.startsWith(selectedMonth))
 
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+    const filteredExpenses = monthFilteredExpenses.filter(
+    (e) =>
+      e.note?.toLowerCase().includes(filterQuery.toLowerCase()) ||
+      e.category?.toLowerCase().includes(filterQuery.toLowerCase())
+  )
+
+  const groupedByDate = filteredExpenses.reduce((groups: Record<string, any[]>, e) => {
+    const dateKey = new Date(e.spent_on).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+    if (!groups[dateKey]) groups[dateKey] = []
+    groups[dateKey].push(e)
+    return groups
+  }, {})
+
+    const [editingId, setEditingId] = useState<string | null>(null)
+  const [editAmount, setEditAmount] = useState('')
+  const [editNote, setEditNote] = useState('')
+  const [editMode, setEditMode] = useState<'cash' | 'online'>('online')
+
+  const startEdit = (e: any) => {
+    setEditingId(e.id)
+    setEditAmount(String(e.amount))
+    setEditNote(e.note || '')
+    setEditMode(e.payment_mode || 'online')
+  }
+
+  const saveEdit = async (id: string) => {
+    if (!editAmount || Number(editAmount) <= 0) return
+    await updateExpense(id, { amount: Number(editAmount), note: editNote, payment_mode: editMode })
+    setEditingId(null)
+    loadData()
+  }
 
   const handleDeleteClick = (id: string) => {
     if (confirmDeleteId === id) {
@@ -57,7 +100,15 @@ export default function Expenses() {
       <h1 className="text-xl font-semibold mb-4">Expenses</h1>
 
       <div className="bg-primary text-white rounded-2xl p-6 mb-4 shadow-sm">
-        <p className="text-sm opacity-80">This month</p>
+        <div className="flex items-center justify-between mb-2">
+          <button onClick={() => changeMonth(-1)} className="p-1">
+            <ChevronLeft size={18} />
+          </button>
+          <p className="text-sm font-medium">{monthLabel}</p>
+          <button onClick={() => changeMonth(1)} className="p-1">
+            <ChevronRight size={18} />
+          </button>
+        </div>
         <p className="text-3xl font-semibold mt-1">₹{summary.total.toFixed(2)}</p>
         <p className="text-xs opacity-70 mt-1">{summary.count} expenses</p>
       </div>
@@ -134,43 +185,93 @@ export default function Expenses() {
         <div className="space-y-2">
           {[1, 2, 3].map((i) => <div key={i} className="h-16 bg-white/60 rounded-2xl animate-pulse border border-border" />)}
         </div>
-      ) : expenses.length === 0 ? (
+      ) : filteredExpenses.length === 0 ? (
         <Card className="p-2">
           <EmptyState icon={Wallet} title="No expenses yet" subtitle="Add your first expense to start tracking spending" />
         </Card>
       ) : (
-        <div className="space-y-2">
-          {expenses
-            .filter(
-              (e) =>
-                e.note?.toLowerCase().includes(filterQuery.toLowerCase()) ||
-                e.category?.toLowerCase().includes(filterQuery.toLowerCase())
-            )
-            .map((e) => {
-            const Icon = CATEGORY_ICONS[e.category] || MoreHorizontal
-            return (
-              <Card key={e.id} className="p-3 flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <Icon size={16} className="text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm capitalize">{e.category}</p>
-                    <p className="text-xs text-text-muted">{e.note} · {e.spent_on}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <p className="font-semibold text-sm">₹{Number(e.amount).toFixed(2)}</p>
-                  <button
-                    onClick={() => handleDeleteClick(e.id)}
-                    className={`transition ${confirmDeleteId === e.id ? 'text-owe font-medium text-xs px-2 py-1 bg-owe/10 rounded-lg' : 'text-text-muted hover:text-owe'}`}
-                  >
-                    {confirmDeleteId === e.id ? 'Confirm?' : <Trash2 size={15} />}
-                  </button>
-                </div>
-              </Card>
-            )
-          })}
+        <div className="space-y-4">
+          {Object.entries(groupedByDate).map(([dateLabel, items]) => (
+            <div key={dateLabel}>
+              <p className="text-xs font-semibold text-text-muted mb-2">
+                {dateLabel} · {items.length} spending{items.length > 1 ? 's' : ''}
+              </p>
+              <div className="space-y-2">
+                {items.map((e) => {
+                  const Icon = CATEGORY_ICONS[e.category] || MoreHorizontal
+
+                  if (editingId === e.id) {
+                    return (
+                      <Card key={e.id} className="p-3">
+                        <label className="block text-xs mb-1 text-text-muted font-medium">Amount</label>
+                        <input
+                          type="number"
+                          value={editAmount}
+                          onChange={(ev) => setEditAmount(ev.target.value)}
+                          className="w-full mb-2 px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                        <label className="block text-xs mb-1 text-text-muted font-medium">Reason / Details</label>
+                        <input
+                          type="text"
+                          value={editNote}
+                          onChange={(ev) => setEditNote(ev.target.value)}
+                          className="w-full mb-2 px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                        <div className="flex gap-2 mb-3">
+                          <button
+                            type="button"
+                            onClick={() => setEditMode('cash')}
+                            className={`flex-1 py-1.5 rounded-lg text-xs font-medium border ${editMode === 'cash' ? 'bg-primary text-white border-primary' : 'border-border text-text-muted'}`}
+                          >
+                            Cash
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditMode('online')}
+                            className={`flex-1 py-1.5 rounded-lg text-xs font-medium border ${editMode === 'online' ? 'bg-primary text-white border-primary' : 'border-border text-text-muted'}`}
+                          >
+                            Online
+                          </button>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button onClick={() => saveEdit(e.id)} className="text-xs py-1.5 px-3 flex-1">Save</Button>
+                          <Button variant="secondary" onClick={() => setEditingId(null)} className="text-xs py-1.5 px-3 flex-1">Cancel</Button>
+                        </div>
+                      </Card>
+                    )
+                  }
+
+                  return (
+                    <Card key={e.id} className="p-3 flex justify-between items-center">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                          <Icon size={16} className="text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{e.note || 'No reason'}</p>
+                          <p className="text-xs text-text-muted capitalize">
+                            {e.category} · {e.payment_mode || 'online'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-sm">₹{Number(e.amount).toFixed(2)}</p>
+                        <button onClick={() => startEdit(e)} className="text-text-muted hover:text-primary transition">
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(e.id)}
+                          className={`transition ${confirmDeleteId === e.id ? 'text-owe font-medium text-xs px-2 py-1 bg-owe/10 rounded-lg' : 'text-text-muted hover:text-owe'}`}
+                        >
+                          {confirmDeleteId === e.id ? 'Confirm?' : <Trash2 size={15} />}
+                        </button>
+                      </div>
+                    </Card>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
