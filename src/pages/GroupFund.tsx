@@ -33,12 +33,20 @@ export default function GroupFund() {
   }, [fundId, selectedMonth])
 
   const changeMonth = (delta: number) => {
-    const [year, month] = selectedMonth.split('-').map(Number)
-    const newDate = new Date(year, month - 1 + delta, 1)
-    setSelectedMonth(newDate.toISOString().slice(0, 7))
+    let [year, month] = selectedMonth.split('-').map(Number)
+    month += delta
+    if (month > 12) {
+      month = 1
+      year += 1
+    }
+    if (month < 1) {
+      month = 12
+      year -= 1
+    }
+    setSelectedMonth(`${year}-${String(month).padStart(2, '0')}`)
   }
 
-  const monthLabel = new Date(selectedMonth + '-01').toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
+  const monthLabel = new Date(selectedMonth + '-01T12:00:00').toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
 
   if (loading) {
     return (

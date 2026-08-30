@@ -93,7 +93,11 @@ serve(async (req) => {
         body: JSON.stringify({
           message: {
             token: profile.fcm_token,
-            notification: { title, body },
+            data: {
+              title,
+              body,
+              url: '/dashboard',
+            },
           },
         }),
       }
