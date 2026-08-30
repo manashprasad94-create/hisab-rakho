@@ -45,7 +45,7 @@ import ShareTarget from './pages/ShareTarget'
 
 import { listFriends } from './lib/friends'
 import Avatar from './components/Avatar'
-import { listUpdates, getUnreadCount } from './lib/updates'
+import { getUnreadCount } from './lib/updates'
 import { Bell } from 'lucide-react'
 import Updates from './pages/Updates'
 
