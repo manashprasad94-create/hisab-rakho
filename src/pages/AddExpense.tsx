@@ -1,17 +1,17 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, UtensilsCrossed, Fuel, ShoppingBag, Plane, Film, HeartPulse, GraduationCap, MoreHorizontal } from 'lucide-react'
+import { ArrowLeft, UtensilsCrossed, ShoppingBag, Plane, Film,GraduationCap, MoreHorizontal } from 'lucide-react'
 import { addExpense } from '../lib/expenses'
 import Card from '../components/card'
 import Button from '../components/Button'
 
 const CATEGORIES = [
   { id: 'food', label: 'Food', icon: UtensilsCrossed },
-  { id: 'fuel', label: 'Fuel', icon: Fuel },
+  { id: 'lunch', label: 'Lunch', icon: UtensilsCrossed },
+  { id: 'dinner', label: 'Dinner', icon: UtensilsCrossed },
   { id: 'shopping', label: 'Shopping', icon: ShoppingBag },
   { id: 'travel', label: 'Travel', icon: Plane },
   { id: 'entertainment', label: 'Entertainment', icon: Film },
-  { id: 'medical', label: 'Medical', icon: HeartPulse },
   { id: 'education', label: 'Education', icon: GraduationCap },
   { id: 'other', label: 'Other', icon: MoreHorizontal },
 ]

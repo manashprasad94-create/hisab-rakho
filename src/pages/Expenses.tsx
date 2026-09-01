@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Wallet, Trash2, UtensilsCrossed, Fuel, ShoppingBag, Plane, Film, HeartPulse, GraduationCap, MoreHorizontal, Search, Download, ChevronLeft, ChevronRight, Pencil } from 'lucide-react'
+import { Plus, Wallet, Trash2, UtensilsCrossed, ShoppingBag, Plane, Film, GraduationCap, MoreHorizontal, Search, Download, ChevronLeft, ChevronRight, Pencil } from 'lucide-react'
 import { listExpenses, deleteExpense, updateExpense, getCategorySummary } from '../lib/expenses'
 import Card from '../components/card'
 import Button from '../components/Button'
@@ -9,11 +9,11 @@ import { exportToCsv } from '../lib/exportCsv'
 
 const CATEGORY_ICONS: Record<string, any> = {
   food: UtensilsCrossed,
-  fuel: Fuel,
+  lunch: UtensilsCrossed,
   shopping: ShoppingBag,
   travel: Plane,
   entertainment: Film,
-  medical: HeartPulse,
+  dinner: UtensilsCrossed,
   education: GraduationCap,
   other: MoreHorizontal,
 }
