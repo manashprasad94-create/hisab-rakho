@@ -37,7 +37,7 @@ export default function GroupFundsList() {
 
   return (
     <div className="min-h-screen bg-bg-soft p-4 pb-24">
-      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-text-muted mb-3 text-sm">
+      <button onClick={() => navigate('/dashboard')} className="flex items-center gap-1 text-text-muted mb-3 text-sm">
         <ArrowLeft size={16} /> Back
       </button>
       <h1 className="text-xl font-semibold mb-4 flex items-center gap-2">
