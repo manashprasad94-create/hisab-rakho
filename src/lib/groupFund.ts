@@ -106,28 +106,82 @@ export async function getFundSummary(fundId: string, month?: string) {
   }
 }
 
-export async function addFundDeposit(fundId: string, amount: number, reason: string) {
+export async function addFundDeposit(
+  fundId: string,
+  holderId: string,
+  amount: number,
+  reason: string,
+  paymentMode: 'cash' | 'online'
+) {
   const userId = useAuthStore.getState().user?.id
   if (!userId) throw new Error('Not logged in')
 
   const { data, error } = await supabase
     .from('group_fund_transactions')
-    .insert({ fund_id: fundId, type: 'deposit', amount, reason, added_by: userId })
+    .insert({ fund_id: fundId, type: 'deposit', amount, reason, added_by: userId, holder_id: holderId, payment_mode: paymentMode })
     .select()
     .single()
   if (error) throw error
   return data
 }
 
-export async function addFundExpense(fundId: string, amount: number, reason: string, category: string) {
+export async function addFundExpense(
+  fundId: string,
+  amount: number,
+  reason: string,
+  category: string,
+  paymentMode: 'cash' | 'online'
+) {
   const userId = useAuthStore.getState().user?.id
   if (!userId) throw new Error('Not logged in')
 
   const { data, error } = await supabase
     .from('group_fund_transactions')
-    .insert({ fund_id: fundId, type: 'expense', amount, reason, category, added_by: userId })
+    .insert({
+      fund_id: fundId,
+      type: 'expense',
+      amount,
+      reason,
+      category,
+      added_by: userId,
+      holder_id: userId,
+      payment_mode: paymentMode,
+    })
     .select()
     .single()
   if (error) throw error
   return data
+}
+
+// Get holders (owner/admin) with their cash + online balances, scoped to a month
+export async function getHolderBalances(fundId: string, month?: string) {
+  const targetMonth = month || new Date().toISOString().slice(0, 7)
+
+  const { data: members, error: membersError } = await supabase
+    .from('group_fund_members')
+    .select('user_id, role, profiles:user_id(full_name)')
+    .eq('fund_id', fundId)
+    .in('role', ['owner', 'admin'])
+  if (membersError) throw membersError
+
+  const txns = await listFundTransactions(fundId)
+  const scoped = txns.filter((t) => t.created_at.startsWith(targetMonth))
+
+  return (members || []).map((m: any) => {
+    const cash = scoped
+      .filter((t) => t.holder_id === m.user_id && t.payment_mode === 'cash')
+      .reduce((sum, t) => sum + (t.type === 'deposit' ? Number(t.amount) : -Number(t.amount)), 0)
+    const online = scoped
+      .filter((t) => t.holder_id === m.user_id && t.payment_mode === 'online')
+      .reduce((sum, t) => sum + (t.type === 'deposit' ? Number(t.amount) : -Number(t.amount)), 0)
+
+    return {
+      userId: m.user_id,
+      name: m.profiles?.full_name,
+      role: m.role,
+      cash,
+      online,
+      total: cash + online,
+    }
+  })
 }

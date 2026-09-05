@@ -11,7 +11,7 @@ export default function Updates() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    listUpdates(50).then((data) => {
+    listUpdates(5).then((data) => {
       setUpdates(data)
       setLoading(false)
     })

@@ -19,6 +19,7 @@ export default function AddFundExpense() {
   const [amount, setAmount] = useState('')
   const [reason, setReason] = useState('')
   const [category, setCategory] = useState('groceries')
+  const [paymentMode, setPaymentMode] = useState<'cash' | 'online'>('online')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -31,7 +32,7 @@ export default function AddFundExpense() {
 
     setLoading(true)
     try {
-      await addFundExpense(fundId, Number(amount), reason, category)
+      await addFundExpense(fundId, Number(amount), reason, category, paymentMode)
       navigate(`/group-fund/${fundId}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add expense')
@@ -80,6 +81,27 @@ export default function AddFundExpense() {
                 <span className="text-[9px] font-medium">{label}</span>
               </button>
             ))}
+          </div>
+                    <label className="block text-sm mb-2 text-text-muted font-medium">Paid From</label>
+          <div className="flex gap-2 mb-4">
+            <button
+              type="button"
+              onClick={() => setPaymentMode('cash')}
+              className={`flex-1 py-2 rounded-xl font-medium border text-sm transition ${
+                paymentMode === 'cash' ? 'bg-primary text-white border-primary' : 'border-border text-text-muted'
+              }`}
+            >
+              My Cash
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaymentMode('online')}
+              className={`flex-1 py-2 rounded-xl font-medium border text-sm transition ${
+                paymentMode === 'online' ? 'bg-primary text-white border-primary' : 'border-border text-text-muted'
+              }`}
+            >
+              My Online
+            </button>
           </div>
 
           <label className="block text-sm mb-1 text-text-muted font-medium">Spent On</label>

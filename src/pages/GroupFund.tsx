@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, PiggyBank, Plus, MinusCircle, History, Users, ChevronLeft, ChevronRight } from 'lucide-react'
-import { getMyRoleInFund, getFundSummary } from '../lib/groupFund'
+import { getMyRoleInFund, getFundSummary, getHolderBalances } from '../lib/groupFund'
 import Card from '../components/card'
 import Button from '../components/Button'
 
@@ -10,6 +10,7 @@ export default function GroupFund() {
   const navigate = useNavigate()
   const [role, setRole] = useState<'owner' | 'admin' | 'member' | null>(null)
   const [summary, setSummary] = useState({ total: 0, used: 0, remaining: 0 })
+  const [holderBalances, setHolderBalances] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [notMember, setNotMember] = useState(false)
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
@@ -25,6 +26,8 @@ export default function GroupFund() {
     setRole(r)
     const s = await getFundSummary(fundId, selectedMonth)
     setSummary(s)
+    const holders = await getHolderBalances(fundId, selectedMonth)
+    setHolderBalances(holders)
     setLoading(false)
   }
 
@@ -107,6 +110,22 @@ export default function GroupFund() {
           </div>
         </div>
       </div>
+            {holderBalances.length > 0 && (
+        <div className="space-y-2 mb-4">
+          {holderBalances.map((h) => (
+            <Card key={h.userId} className="p-3">
+              <div className="flex justify-between items-center mb-2">
+                <p className="text-sm font-medium">{h.name}'s Balance</p>
+                <p className="text-sm font-semibold text-primary">₹{h.total.toFixed(2)}</p>
+              </div>
+              <div className="flex gap-4 text-xs text-text-muted">
+                <span>Cash: ₹{h.cash.toFixed(2)}</span>
+                <span>Online: ₹{h.online.toFixed(2)}</span>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
 
       <div className="flex gap-2 mb-3">
         {canAddFunds && (

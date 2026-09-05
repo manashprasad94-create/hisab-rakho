@@ -13,7 +13,7 @@ export default defineConfig({
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.js',
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['icon-192.png'],
       manifest: {
         name: 'Hisab Kitab',
         short_name: 'Hisab Kitab',
