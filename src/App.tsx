@@ -15,17 +15,13 @@ import {
 import Card from './components/card'
 import Button from './components/Button'
 import EmptyState from './components/EmptyState'
-
 import { supabase } from './lib/supabase'
 import { useAuthStore } from './store/authStore'
-
 import Signup from './pages/auth/Signup'
 import Login from './pages/auth/Login'
 import ForgotPassword from './pages/auth/ForgotPassword'
 import ResetPassword from './pages/auth/ResetPassword'
-
 import LandingPage from './pages/LandingPage'
-
 import Friends from './pages/Friends'
 import AddTransaction from './pages/AddTransaction'
 import FriendDetail from './pages/FriendDetail'
@@ -41,7 +37,6 @@ import GroupFundHistory from './pages/GroupFundHistory'
 import FundMembers from './pages/FundMembers'
 import { PiggyBank } from 'lucide-react'
 import ShareTarget from './pages/ShareTarget'
-
 import { listFriends } from './lib/friends'
 import Avatar from './components/Avatar'
 import { getUnreadCount } from './lib/updates'
