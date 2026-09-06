@@ -36,7 +36,6 @@ import BalanceBreakdown from './pages/BalanceBreakdown'
 import PersonalNotes from './pages/PersonalNotes'
 import GroupFundsList from './pages/GroupFundsList'
 import GroupFund from './pages/GroupFund'
-import AddFunds from './pages/AddFunds'
 import AddFundExpense from './pages/AddFundExpense'
 import GroupFundHistory from './pages/GroupFundHistory'
 import FundMembers from './pages/FundMembers'
@@ -686,14 +685,6 @@ function App() {
           element={
             <ProtectedRoute>
               <GroupFund />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/group-fund/:fundId/add-funds"
-          element={
-            <ProtectedRoute>
-              <AddFunds />
             </ProtectedRoute>
           }
         />

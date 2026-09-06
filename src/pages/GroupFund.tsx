@@ -1,19 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, PiggyBank, Plus, MinusCircle, History, Users, ChevronLeft, ChevronRight } from 'lucide-react'
-import { getMyRoleInFund, getFundSummary, getHolderBalances } from '../lib/groupFund'
-import Card from '../components/card'
+import { ArrowLeft, PiggyBank, MinusCircle, History, Users } from 'lucide-react'
+import { getMyRoleInFund, getHolderBalances } from '../lib/groupFund'
+import Card from '../components/Card'
 import Button from '../components/Button'
 
 export default function GroupFund() {
   const { fundId } = useParams<{ fundId: string }>()
   const navigate = useNavigate()
   const [role, setRole] = useState<'owner' | 'admin' | 'member' | null>(null)
-  const [summary, setSummary] = useState({ total: 0, used: 0, remaining: 0 })
   const [holderBalances, setHolderBalances] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [notMember, setNotMember] = useState(false)
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
 
   const loadData = async () => {
     if (!fundId) return
@@ -24,32 +22,14 @@ export default function GroupFund() {
       return
     }
     setRole(r)
-    const s = await getFundSummary(fundId, selectedMonth)
-    setSummary(s)
-    const holders = await getHolderBalances(fundId, selectedMonth)
+    const holders = await getHolderBalances(fundId)
     setHolderBalances(holders)
     setLoading(false)
   }
 
   useEffect(() => {
     loadData()
-  }, [fundId, selectedMonth])
-
-  const changeMonth = (delta: number) => {
-    let [year, month] = selectedMonth.split('-').map(Number)
-    month += delta
-    if (month > 12) {
-      month = 1
-      year += 1
-    }
-    if (month < 1) {
-      month = 12
-      year -= 1
-    }
-    setSelectedMonth(`${year}-${String(month).padStart(2, '0')}`)
-  }
-
-  const monthLabel = new Date(selectedMonth + '-01T12:00:00').toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
+  }, [fundId])
 
   if (loading) {
     return (
@@ -75,7 +55,7 @@ export default function GroupFund() {
   }
 
   const canAddExpense = role === 'owner' || role === 'admin'
-  const canAddFunds = role === 'owner'
+  const totalRemaining = holderBalances.reduce((sum, h) => sum + h.total, 0)
 
   return (
     <div className="min-h-screen bg-bg-soft p-4 pb-24">
@@ -88,29 +68,11 @@ export default function GroupFund() {
       <p className="text-xs text-text-muted mb-4">Shared with your group · {role}</p>
 
       <div className="bg-primary text-white rounded-2xl p-6 mb-4 shadow-sm">
-        <div className="flex items-center justify-between mb-2">
-          <button onClick={() => changeMonth(-1)} className="p-1">
-            <ChevronLeft size={18} />
-          </button>
-          <p className="text-sm font-medium">{monthLabel}</p>
-          <button onClick={() => changeMonth(1)} className="p-1">
-            <ChevronRight size={18} />
-          </button>
-        </div>
-        <p className="text-sm opacity-80">Remaining this month</p>
-        <p className="text-3xl font-semibold mt-1">₹{summary.remaining.toFixed(2)}</p>
-        <div className="flex justify-between mt-4 pt-4 border-t border-white/20 text-sm">
-          <div>
-            <p className="opacity-70">Total Added</p>
-            <p className="font-medium">₹{summary.total.toFixed(2)}</p>
-          </div>
-          <div className="text-right">
-            <p className="opacity-70">Total Used</p>
-            <p className="font-medium">₹{summary.used.toFixed(2)}</p>
-          </div>
-        </div>
+        <p className="text-sm opacity-80">Total Remaining</p>
+        <p className="text-3xl font-semibold mt-1">₹{totalRemaining.toFixed(2)}</p>
       </div>
-            {holderBalances.length > 0 && (
+
+      {holderBalances.length > 0 && (
         <div className="space-y-2 mb-4">
           {holderBalances.map((h) => (
             <Card key={h.userId} className="p-3">
@@ -128,13 +90,8 @@ export default function GroupFund() {
       )}
 
       <div className="flex gap-2 mb-3">
-        {canAddFunds && (
-          <Button onClick={() => navigate(`/group-fund/${fundId}/add-funds`)} className="flex-1 flex items-center justify-center gap-2">
-            <Plus size={16} /> Add Funds
-          </Button>
-        )}
         {canAddExpense && (
-          <Button variant="secondary" onClick={() => navigate(`/group-fund/${fundId}/add-expense`)} className="flex-1 flex items-center justify-center gap-2">
+          <Button onClick={() => navigate(`/group-fund/${fundId}/add-expense`)} className="flex-1 flex items-center justify-center gap-2">
             <MinusCircle size={16} /> Add Expense
           </Button>
         )}

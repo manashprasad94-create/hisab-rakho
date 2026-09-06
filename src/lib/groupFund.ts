@@ -19,7 +19,6 @@ export async function listMyFunds() {
 
 export async function createFund(name: string) {
   const userId = useAuthStore.getState().user?.id
-  console.log('createFund userId:', userId)
   if (!userId) throw new Error('Not logged in')
 
   const { data: fund, error: fundError } = await supabase
@@ -88,41 +87,40 @@ export async function listFundTransactions(fundId: string) {
   return data
 }
 
-export async function getFundSummary(fundId: string, month?: string) {
-  const txns = await listFundTransactions(fundId)
-  const targetMonth = month || new Date().toISOString().slice(0, 7)
-  const scoped = txns.filter((t) => t.created_at.startsWith(targetMonth))
-
-  let totalDeposits = 0
-  let totalExpenses = 0
-  for (const t of scoped) {
-    if (t.type === 'deposit') totalDeposits += Number(t.amount)
-    else totalExpenses += Number(t.amount)
-  }
-  return {
-    total: totalDeposits,
-    used: totalExpenses,
-    remaining: totalDeposits - totalExpenses,
-  }
+// Holder balances now come from a directly-editable table (backend-managed top-ups)
+export async function getHolderBalances(fundId: string) {
+  const { data, error } = await supabase
+    .from('group_fund_balances')
+    .select('*, profiles:user_id(full_name)')
+    .eq('fund_id', fundId)
+  if (error) throw error
+  return (data || []).map((b: any) => ({
+    userId: b.user_id,
+    name: b.profiles?.full_name,
+    cash: Number(b.cash_balance),
+    online: Number(b.online_balance),
+    total: Number(b.cash_balance) + Number(b.online_balance),
+  }))
 }
 
-export async function addFundDeposit(
-  fundId: string,
-  holderId: string,
-  amount: number,
-  reason: string,
-  paymentMode: 'cash' | 'online'
-) {
-  const userId = useAuthStore.getState().user?.id
-  if (!userId) throw new Error('Not logged in')
-
-  const { data, error } = await supabase
-    .from('group_fund_transactions')
-    .insert({ fund_id: fundId, type: 'deposit', amount, reason, added_by: userId, holder_id: holderId, payment_mode: paymentMode })
-    .select()
+async function deductFromBalance(fundId: string, userId: string, amount: number, mode: 'cash' | 'online') {
+  const { data: current, error: fetchError } = await supabase
+    .from('group_fund_balances')
+    .select('cash_balance, online_balance')
+    .eq('fund_id', fundId)
+    .eq('user_id', userId)
     .single()
-  if (error) throw error
-  return data
+  if (fetchError) throw fetchError
+
+  const field = mode === 'cash' ? 'cash_balance' : 'online_balance'
+  const newValue = Number(current[field]) - amount
+
+  const { error: updateError } = await supabase
+    .from('group_fund_balances')
+    .update({ [field]: newValue, updated_at: new Date().toISOString() })
+    .eq('fund_id', fundId)
+    .eq('user_id', userId)
+  if (updateError) throw updateError
 }
 
 export async function addFundExpense(
@@ -150,38 +148,8 @@ export async function addFundExpense(
     .select()
     .single()
   if (error) throw error
+
+  await deductFromBalance(fundId, userId, amount, paymentMode)
+
   return data
-}
-
-// Get holders (owner/admin) with their cash + online balances, scoped to a month
-export async function getHolderBalances(fundId: string, month?: string) {
-  const targetMonth = month || new Date().toISOString().slice(0, 7)
-
-  const { data: members, error: membersError } = await supabase
-    .from('group_fund_members')
-    .select('user_id, role, profiles:user_id(full_name)')
-    .eq('fund_id', fundId)
-    .in('role', ['owner', 'admin'])
-  if (membersError) throw membersError
-
-  const txns = await listFundTransactions(fundId)
-  const scoped = txns.filter((t) => t.created_at.startsWith(targetMonth))
-
-  return (members || []).map((m: any) => {
-    const cash = scoped
-      .filter((t) => t.holder_id === m.user_id && t.payment_mode === 'cash')
-      .reduce((sum, t) => sum + (t.type === 'deposit' ? Number(t.amount) : -Number(t.amount)), 0)
-    const online = scoped
-      .filter((t) => t.holder_id === m.user_id && t.payment_mode === 'online')
-      .reduce((sum, t) => sum + (t.type === 'deposit' ? Number(t.amount) : -Number(t.amount)), 0)
-
-    return {
-      userId: m.user_id,
-      name: m.profiles?.full_name,
-      role: m.role,
-      cash,
-      online,
-      total: cash + online,
-    }
-  })
 }
