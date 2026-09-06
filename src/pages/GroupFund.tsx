@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, PiggyBank, MinusCircle, History, Users } from 'lucide-react'
 import { getMyRoleInFund, getHolderBalances } from '../lib/groupFund'
-import Card from '../components/Card'
+import Card from '../components/card'
 import Button from '../components/Button'
 
 export default function GroupFund() {
