@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
+import { Analytics } from '@vercel/analytics/react'
 import { listAllTransactions } from './lib/transactions'
 import { registerPushNotifications } from './lib/firebase'
 import {
@@ -717,6 +718,8 @@ function App() {
         />
 
       </Routes>
+
+      <Analytics />
 
     </BrowserRouter>
   )
