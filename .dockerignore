@@ -1,0 +1,43 @@
+# Dependencies and package caches
+node_modules
+.pnpm-store
+
+# Build outputs
+dist
+dist-ssr
+
+# Local environment files and secrets
+.env
+.env.local
+.env.*.local
+
+# Version control
+.git
+.gitignore
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor and IDE metadata
+.vscode
+.idea
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Local python environment and scripts
+venv
+test.py
+
+# Supabase CLI temporary files
+supabase/.temp
+
+# Docker and docs files
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+README.md
