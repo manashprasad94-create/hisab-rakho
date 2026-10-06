@@ -1,9 +1,11 @@
+import LoadingState from '../components/LoadingState'
+import StatusMessage from '../components/StatusMessage'
+import PageHeader from '../components/PageHeader'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
-import { listAllTransactions } from '../lib/transactions'
-import { supabase } from '../lib/supabase'
+import { listFriendBalances } from '../lib/transactions'
 import Card from '../components/card'
 import Avatar from '../components/Avatar'
 import EmptyState from '../components/EmptyState'
@@ -15,39 +17,20 @@ export default function BalanceBreakdown() {
   const { user } = useAuthStore()
   const [rows, setRows] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     if (!user) return
-    listAllTransactions().then(async (txns) => {
-      const perFriend: Record<string, number> = {}
-
-      for (const t of txns) {
-        if (t.status === 'settled' || t.status === 'pending_acceptance') continue
-        const iAmOwed = t.payer_id === user.id
-        const friendId = iAmOwed ? t.payee_id : t.payer_id
-
-        if (type === 'receive' && iAmOwed) {
-          perFriend[friendId] = (perFriend[friendId] || 0) + Number(t.remaining_amount)
-        }
-        if (type === 'pay' && !iAmOwed) {
-          perFriend[friendId] = (perFriend[friendId] || 0) + Number(t.remaining_amount)
-        }
-      }
-
-      const friendIds = Object.keys(perFriend)
-      if (friendIds.length === 0) {
-        setRows([])
-        setLoading(false)
-        return
-      }
-
-      const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', friendIds)
-
-      const merged = (profiles || [])
-        .map((p) => ({ friend: p, amount: perFriend[p.id] }))
-        .sort((a, b) => b.amount - a.amount)
-
-      setRows(merged)
+    setLoading(true)
+    setError('')
+    listFriendBalances().then((balances) => {
+      setRows(balances.filter((row) => row.direction === type).map((row) => ({
+        friend: { id: row.friend_id, full_name: row.full_name || 'Friend' },
+        amount: Number(row.amount),
+      })))
+      setLoading(false)
+    }).catch((err) => {
+      setError(err instanceof Error ? err.message : 'Could not load balances')
       setLoading(false)
     })
   }, [user, type])
@@ -55,16 +38,15 @@ export default function BalanceBreakdown() {
   const title = type === 'receive' ? "You'll Get" : "You'll Pay"
 
   return (
-    <div className="min-h-screen bg-bg-soft p-4 pb-24">
+    <div className="app-page">
       <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-text-muted mb-3 text-sm">
         <ArrowLeft size={16} /> Back
       </button>
-      <h1 className="text-xl font-semibold mb-4">{title}</h1>
+      <PageHeader title={<> {title} </>} />
+      {error && <StatusMessage>{error}</StatusMessage>}
 
       {loading ? (
-        <div className="space-y-2">
-          {[1, 2].map((i) => <div key={i} className="h-16 bg-white/60 rounded-2xl animate-pulse border border-border" />)}
-        </div>
+        <LoadingState />
       ) : rows.length === 0 ? (
         <Card className="p-2">
           <EmptyState icon={Wallet} title="Nothing here" subtitle="No pending balances of this type" />

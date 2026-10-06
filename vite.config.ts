@@ -18,8 +18,8 @@ export default defineConfig({
         name: 'Hisab Kitab',
         short_name: 'Hisab Kitab',
         description: 'Track money. Not misunderstandings.',
-        theme_color: '#0f766e',
-        background_color: '#ffffff',
+        theme_color: '#203047',
+        background_color: '#f4f5f2',
         display: 'standalone',
         start_url: '/',
         share_target: {
@@ -51,7 +51,7 @@ export default defineConfig({
         ],
       },
       injectManifest: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
       },
     }),
   ],

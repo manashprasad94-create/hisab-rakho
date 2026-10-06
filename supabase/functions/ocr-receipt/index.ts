@@ -1,18 +1,44 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { authenticatedUser, claimQuota, corsHeaders, json } from '../_shared/auth.ts'
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
+  const user = await authenticatedUser(req)
+  if (!user) return json({ error: 'Sign in required' }, 401)
+  if (Number(req.headers.get('Content-Length') || 0) > 7_000_000) {
+    return json({ error: 'Image is too large' }, 413)
+  }
 
   try {
-    const { imageBase64 } = await req.json()
-    console.log('OCR-RECEIPT-V2-STARTING')
+    const reader = req.body?.getReader()
+    if (!reader) return json({ error: 'Image is required' }, 400)
+    const decoder = new TextDecoder()
+    let payload = ''
+    let bytes = 0
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      bytes += value.byteLength
+      if (bytes > 7_000_000) {
+        await reader.cancel()
+        return json({ error: 'Image is too large' }, 413)
+      }
+      payload += decoder.decode(value, { stream: true })
+    }
+    payload += decoder.decode()
+    const { imageBase64, mimeType = 'image/jpeg' } = JSON.parse(payload)
+    if (typeof imageBase64 !== 'string' || imageBase64.length > 6_700_000 ||
+        !/^[A-Za-z0-9+/]+={0,2}$/.test(imageBase64) ||
+        !['image/jpeg', 'image/png', 'image/webp'].includes(mimeType)) {
+      return json({ error: 'Use a JPEG, PNG, or WebP image under 5 MB' }, 400)
+    }
     const groqApiKey = Deno.env.get('GROQ_API_KEY') ?? ''
+    if (!groqApiKey) return json({ error: 'Receipt reader is not configured' }, 503)
+    if (!(await claimQuota(user.id, 'ocr', 20))) {
+      return json({ error: 'Receipt reading limit reached. Try later.' }, 429)
+    }
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -32,7 +58,7 @@ serve(async (req) => {
               },
               {
                 type: 'image_url',
-                image_url: { url: `data:image/jpeg;base64,${imageBase64}` },
+                image_url: { url: `data:${mimeType};base64,${imageBase64}` },
               },
             ],
           },
@@ -41,11 +67,9 @@ serve(async (req) => {
       }),
     })
 
+    if (!response.ok) return json({ error: 'Receipt reader is unavailable' }, 502)
     const result = await response.json()
-    console.log('groq status', response.status)
-    console.log('groq raw result', JSON.stringify(result))
     const content = result.choices?.[0]?.message?.content ?? '{}'
-    console.log('extracted content', content)
 
     let parsed
     try {
@@ -60,13 +84,12 @@ serve(async (req) => {
       parsed = { amount: '', note: '' }
     }
 
-    return new Response(JSON.stringify(parsed), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    return json({
+      amount: typeof parsed.amount === 'string' ? parsed.amount.slice(0, 30) : '',
+      note: typeof parsed.note === 'string' ? parsed.note.slice(0, 200) : '',
     })
   } catch (err) {
-    return new Response(JSON.stringify({ error: String(err) }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    console.error('ocr-receipt failed', err)
+    return json({ error: 'Receipt could not be read' }, 500)
   }
 })

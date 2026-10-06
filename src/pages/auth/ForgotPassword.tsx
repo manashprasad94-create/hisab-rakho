@@ -1,3 +1,5 @@
+import StatusMessage from '../../components/StatusMessage'
+import { Input } from '../../components/FormControls'
 import { useState } from 'react'
 import { Mail, MailCheck } from 'lucide-react'
 import { requestPasswordReset } from '../../lib/auth'
@@ -26,7 +28,7 @@ export default function ForgotPassword() {
 
   if (sent) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-bg-soft px-4">
+      <div className="auth-page">
         <Card className="w-full max-w-sm p-6 text-center">
           <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4 mx-auto">
             <MailCheck size={26} className="text-primary" strokeWidth={2} />
@@ -39,19 +41,19 @@ export default function ForgotPassword() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg-soft px-4">
-      <div className="w-full max-w-sm">
+    <div className="auth-page">
+      <div className="auth-container">
         <h1 className="text-2xl font-semibold text-center mb-1">Reset Password</h1>
         <p className="text-sm text-text-muted text-center mb-6">Enter your email, we'll send a reset link</p>
 
-        <Card className="p-6">
+        <Card className="auth-card">
           <form onSubmit={handleSubmit}>
-            {error && <p className="text-owe text-sm mb-4">{error}</p>}
+            {error && <StatusMessage>{error}</StatusMessage>}
 
-            <label className="flex items-center gap-1.5 text-sm mb-1 text-text-muted font-medium">
+            <label htmlFor="forgotpassword-field-23" className="flex items-center gap-1.5 text-sm mb-1 text-text-muted font-medium">
               <Mail size={14} /> Email
             </label>
-            <input
+            <Input id="forgotpassword-field-23"
               type="email"
               required
               value={email}
@@ -59,7 +61,7 @@ export default function ForgotPassword() {
               className="w-full mb-6 px-3 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
             />
 
-            <Button type="submit" disabled={loading} className="w-full">
+            <Button type="submit" loading={loading} className="w-full">
               {loading ? 'Sending...' : 'Send Reset Link'}
             </Button>
 

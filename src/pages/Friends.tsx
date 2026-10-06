@@ -1,3 +1,7 @@
+import LoadingState from '../components/LoadingState'
+import StatusMessage from '../components/StatusMessage'
+import PageHeader from '../components/PageHeader'
+import { Input } from '../components/FormControls'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, UserPlus, Users } from 'lucide-react'
@@ -14,6 +18,7 @@ import Card from '../components/card'
 import Button from '../components/Button'
 import Avatar from '../components/Avatar'
 import EmptyState from '../components/EmptyState'
+import { errorMessage } from '../lib/errorMessage'
 
 export default function Friends() {
   const navigate = useNavigate()
@@ -28,10 +33,15 @@ export default function Friends() {
   const [filterQuery, setFilterQuery] = useState('')
 
   const loadData = async () => {
-    const [f, p] = await Promise.all([listFriends(), listPendingRequests()])
-    setFriends(f)
-    setPending(p)
-    setPageLoading(false)
+    try {
+      const [f, p] = await Promise.all([listFriends(), listPendingRequests()])
+      setFriends(f)
+      setPending(p)
+    } catch (err) {
+      setMessage(errorMessage(err, 'Could not load friends'))
+    } finally {
+      setPageLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -41,11 +51,12 @@ export default function Friends() {
   const handleSearch = async () => {
     setMessage('')
     setSearchResult(null)
-    const result = searchMode === 'email' ? await searchUserByEmail(searchEmail) : await searchUserByPhone(searchEmail)
-    if (!result) {
-      setMessage('not_found')
-    } else {
-      setSearchResult(result)
+    try {
+      const result = searchMode === 'email' ? await searchUserByEmail(searchEmail) : await searchUserByPhone(searchEmail)
+      if (!result) setMessage('not_found')
+      else setSearchResult(result)
+    } catch (err) {
+      setMessage(errorMessage(err, 'Could not search users'))
     }
   }
 
@@ -57,7 +68,7 @@ export default function Friends() {
       setSearchResult(null)
       setSearchEmail('')
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Failed to send request')
+      setMessage(errorMessage(err, 'Failed to send request'))
     } finally {
       setLoading(false)
     }
@@ -70,31 +81,35 @@ export default function Friends() {
       setMessage('Invite saved — they will be auto-added once they sign up')
       setSearchEmail('')
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Failed to save invite')
+      setMessage(errorMessage(err, 'Failed to save invite'))
     } finally {
       setLoading(false)
     }
   }
 
   const handleAccept = async (friendshipId: string) => {
-    await acceptFriendRequest(friendshipId)
-    loadData()
+    try {
+      await acceptFriendRequest(friendshipId)
+      await loadData()
+    } catch (err) {
+      setMessage(errorMessage(err, 'Could not accept request'))
+    }
   }
 
   return (
-    <div className="min-h-screen bg-bg-soft p-4 pb-24">
-      <h1 className="text-xl font-semibold mb-4">Friends</h1>
+    <div className="app-page">
+      <PageHeader title={<> Friends </>} />
 
       <Card className="p-4 mb-4">
         <div className="flex gap-2 mb-2">
-          <button
+          <button aria-pressed={searchMode === 'email'}
             type="button"
             onClick={() => { setSearchMode('email'); setSearchEmail(''); setSearchResult(null); setMessage('') }}
             className={`text-xs px-3 py-1 rounded-lg font-medium ${searchMode === 'email' ? 'bg-primary text-white' : 'bg-bg-soft text-text-muted'}`}
           >
             Email
           </button>
-          <button
+          <button aria-pressed={searchMode === 'phone'}
             type="button"
             onClick={() => { setSearchMode('phone'); setSearchEmail(''); setSearchResult(null); setMessage('') }}
             className={`text-xs px-3 py-1 rounded-lg font-medium ${searchMode === 'phone' ? 'bg-primary text-white' : 'bg-bg-soft text-text-muted'}`}
@@ -102,13 +117,13 @@ export default function Friends() {
             Phone
           </button>
         </div>
-        <label className="block text-sm mb-2 text-text-muted font-medium">
+        <label htmlFor="friends-field-16" className="block text-sm mb-2 text-text-muted font-medium">
           Add friend by {searchMode === 'email' ? 'email' : 'phone'}
         </label>
         <div className="flex gap-2">
           <div className="flex-1 relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-            <input
+            <Input id="friends-field-16"
               type={searchMode === 'email' ? 'email' : 'tel'}
               value={searchEmail}
               onChange={(e) => setSearchEmail(e.target.value)}
@@ -123,13 +138,13 @@ export default function Friends() {
           <div className="mt-2 p-3 bg-bg-soft rounded-lg text-sm">
             <p className="text-text-muted mb-2">This person hasn't joined Hisab Kitab yet.</p>
             {searchMode === 'email' && (
-              <Button variant="secondary" onClick={handleInvite} disabled={loading} className="text-sm py-1.5">
+              <Button variant="secondary" onClick={handleInvite} loading={loading} className="text-sm py-1.5">
                 Send Invite
               </Button>
             )}
           </div>
         ) : (
-          message && <p className="text-sm text-text-muted mt-2">{message}</p>
+          message && <StatusMessage tone="info">{message}</StatusMessage>
         )}
 
         {searchResult && (
@@ -148,7 +163,7 @@ export default function Friends() {
       {pending.length > 0 && (
         <div className="mb-4">
           <h2 className="text-sm font-semibold text-text-muted mb-2">Pending Requests</h2>
-          <div className="space-y-2">
+          <div className="record-list">
             {pending.map((req: any) => (
               <Card key={req.id} className="p-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -171,7 +186,7 @@ export default function Friends() {
       {friends.length > 3 && (
         <div className="relative mb-3">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-          <input
+          <Input aria-label="Search records"
             type="text"
             value={filterQuery}
             onChange={(e) => setFilterQuery(e.target.value)}
@@ -182,15 +197,15 @@ export default function Friends() {
       )}
 
       {pageLoading ? (
-        <div className="space-y-2">
-          {[1, 2].map((i) => <div key={i} className="h-16 bg-white/60 rounded-2xl animate-pulse border border-border" />)}
-        </div>
+        <LoadingState />
       ) : friends.length === 0 ? (
         <Card className="p-2">
           <EmptyState icon={Users} title="No friends yet" subtitle="Search by email above to add your first friend" />
         </Card>
+      ) : !friends.some((f) => f.friend.full_name.toLowerCase().includes(filterQuery.toLowerCase())) ? (
+        <Card><EmptyState icon={Search} title="No matching friends" subtitle="Try another name or clear the search field." /></Card>
       ) : (
-        <div className="space-y-2">
+        <div className="record-list">
           {friends
             .filter((f) => f.friend.full_name.toLowerCase().includes(filterQuery.toLowerCase()))
             .map((f) => (

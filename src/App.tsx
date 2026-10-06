@@ -1,16 +1,12 @@
-import { useEffect, useState } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
-import { listAllTransactions } from './lib/transactions'
+import AppNavigation from './components/AppNavigation'
+import PageHeader from './components/PageHeader'
+import StatusMessage from './components/StatusMessage'
+import LoadingState from './components/LoadingState'
+import { useCallback, useEffect, useState } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, Link } from 'react-router-dom'
+import { getFriendBalanceTotals } from './lib/transactions'
 import { registerPushNotifications } from './lib/firebase'
-import {
-  Home,
-  Users,
-  Wallet,
-  User as UserIcon,
-  Plus,
-  ArrowDownLeft,
-  ArrowUpRight,
-} from 'lucide-react'
+import { Wallet, Plus, ArrowDownLeft, ArrowUpRight, ChevronRight } from 'lucide-react'
 
 import Card from './components/card'
 import Button from './components/Button'
@@ -33,6 +29,7 @@ import PersonalNotes from './pages/PersonalNotes'
 import GroupFundsList from './pages/GroupFundsList'
 import GroupFund from './pages/GroupFund'
 import AddFundExpense from './pages/AddFundExpense'
+import DepositFund from './pages/DepositFund'
 import GroupFundHistory from './pages/GroupFundHistory'
 import FundMembers from './pages/FundMembers'
 import { PiggyBank } from 'lucide-react'
@@ -48,7 +45,7 @@ function RootRoute() {
   const { user, loading } = useAuthStore()
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
+    return <div className="app-page"><LoadingState label="Loading your account" /></div>
   }
 
   if (user) {
@@ -65,17 +62,16 @@ function RootRoute() {
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuthStore()
+  const location = useLocation()
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading...
-      </div>
+      <div className="app-page"><LoadingState label="Loading your account" /></div>
     )
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/login" replace state={{ returnTo: location.pathname + location.search + location.hash }} />
   }
 
   return <>{children}</>
@@ -86,49 +82,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
    BOTTOM NAVIGATION
    ========================================================= */
 
-function BottomNav() {
-  const navigate = useNavigate()
-  const location = useLocation()
+function RouteFrame({ children }: { children: React.ReactNode }) {
   const { user } = useAuthStore()
-
-  if (!user) return null
-
-  const items = [
-    { path: '/dashboard', icon: Home, label: 'Home' },
-    { path: '/friends', icon: Users, label: 'Friends' },
-    { path: '/expenses', icon: Wallet, label: 'Expenses' },
-    { path: '/profile', icon: UserIcon, label: 'Profile' },
-  ]
-
-  return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-border flex justify-around py-2 px-2 max-w-lg mx-auto">
-      {items.map(({ path, icon: Icon, label }) => {
-        const active = location.pathname === path
-
-        return (
-          <button
-            key={path}
-            onClick={() => navigate(path)}
-            className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition"
-          >
-            <Icon
-              size={22}
-              strokeWidth={active ? 2.5 : 1.8}
-              className={active ? 'text-primary' : 'text-text-muted'}
-            />
-
-            <span
-              className={`text-[10px] font-medium ${
-                active ? 'text-primary' : 'text-text-muted'
-              }`}
-            >
-              {label}
-            </span>
-          </button>
-        )
-      })}
-    </div>
-  )
+  const { pathname } = useLocation()
+  const publicRoute = ["/", "/login", "/signup", "/forgot-password", "/reset-password"].includes(pathname)
+  return <main id="main-content" tabIndex={-1} className={user && !publicRoute ? "app-workspace" : "public-workspace"}>{children}</main>
 }
 
 
@@ -144,42 +102,27 @@ function Dashboard() {
   const [friends, setFriends] = useState<any[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [dashboardError, setDashboardError] = useState('')
 
   const navigate = useNavigate()
 
-  const refreshDashboard = () => {
+  const refreshDashboard = useCallback(() => {
     if (!user) return
+    setDashboardError('')
 
-    listAllTransactions().then((txns) => {
-      let receive = 0
-      let pay = 0
-
-      for (const t of txns) {
-        if (
-          t.status === 'settled' ||
-          t.status === 'pending_acceptance'
-        ) {
-          continue
-        }
-
-        if (t.payer_id === user.id) {
-          receive += Number(t.remaining_amount)
-        } else {
-          pay += Number(t.remaining_amount)
-        }
-      }
-
-      setToReceive(receive)
-      setToPay(pay)
-      setLoading(false)
-    })
+    getFriendBalanceTotals().then((totals) => {
+      setToReceive(Number(totals.to_receive))
+      setToPay(Number(totals.to_pay))
+    }).catch((err) => {
+      setDashboardError(err instanceof Error ? err.message : 'Could not load balances')
+    }).finally(() => setLoading(false))
 
     listFriends().then((f) => {
       setFriends(f.slice(0, 5))
-    })
+    }).catch((err) => setDashboardError(err instanceof Error ? err.message : 'Could not load friends'))
 
     getUnreadCount().then(setUnreadCount)
-  }
+  }, [user])
 
 
   /* =======================================================
@@ -215,197 +158,49 @@ function Dashboard() {
       )
       .subscribe()
 
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [user])
-
+    return () => { supabase.removeChannel(channel) }
+  }, [user, refreshDashboard])
 
   return (
-    <div className="min-h-screen p-4 pb-24 bg-bg-soft">
-
-      <h1 className="text-2xl font-semibold mb-5">
-        Hello, {profile?.full_name?.split(' ')[0] || 'there'} 👋
-      </h1>
-
-
-      {/* ===================================================
-          BALANCE CARDS
-          =================================================== */}
-
-      <div className="flex gap-3 mb-5">
-
-        {/* You'll Get */}
-
-        <Card
-          onClick={() => navigate('/balance/receive')}
-          className="flex-1 p-4"
-        >
-          <div className="flex items-center gap-2 mb-1">
-            <ArrowDownLeft
-              size={16}
-              className="text-receive"
-              strokeWidth={2.5}
-            />
-
-            <p className="text-xs text-text-muted font-medium">
-              You'll Get
-            </p>
-          </div>
-
-          <p className="text-2xl font-semibold text-receive">
-            ₹{toReceive.toFixed(0)}
-          </p>
+    <div className="app-page">
+      <PageHeader title={<>Hello, {profile?.full_name?.split(' ')[0] || 'there'}</>} description="Your money, all in one place.">
+        <Link to="/updates" className="dashboard-notifications" aria-label={unreadCount ? 'Updates, ' + unreadCount + ' unread' : 'Updates'}>
+          <Bell size={21} aria-hidden="true" />
+          {unreadCount > 0 && <span className="notification-count">{unreadCount > 9 ? '9+' : unreadCount}</span>}
+        </Link>
+      </PageHeader>
+      {dashboardError && <StatusMessage>{dashboardError}</StatusMessage>}
+      <div className="dashboard-balances">
+        <Card onClick={() => navigate('/balance/receive')} className="dashboard-balance">
+          <div className="dashboard-balance-title"><ArrowDownLeft size={18} className="text-receive" aria-hidden="true" />You'll Get</div>
+          {loading ? <div className="skeleton h-9 w-3/4 rounded" aria-label="Loading balance" /> : <p className="balance-value text-receive">₹{toReceive.toFixed(0)}</p>}
         </Card>
-
-
-        {/* You'll Pay */}
-
-        <Card
-          onClick={() => navigate('/balance/pay')}
-          className="flex-1 p-4"
-        >
-          <div className="flex items-center gap-2 mb-1">
-            <ArrowUpRight
-              size={16}
-              className="text-owe"
-              strokeWidth={2.5}
-            />
-
-            <p className="text-xs text-text-muted font-medium">
-              You'll Pay
-            </p>
-          </div>
-
-          <p className="text-2xl font-semibold text-owe">
-            ₹{toPay.toFixed(0)}
-          </p>
+        <Card onClick={() => navigate('/balance/pay')} className="dashboard-balance">
+          <div className="dashboard-balance-title"><ArrowUpRight size={18} className="text-owe" aria-hidden="true" />You'll Pay</div>
+          {loading ? <div className="skeleton h-9 w-3/4 rounded" aria-label="Loading balance" /> : <p className="balance-value text-owe">₹{toPay.toFixed(0)}</p>}
         </Card>
-
       </div>
-
-
-      {/* ===================================================
-          ADD TRANSACTION
-          =================================================== */}
-
-      <Button
-        onClick={() => navigate('/add-transaction')}
-        className="w-full mb-5 flex items-center justify-center gap-2"
-      >
-        <Plus size={18} />
-        Add Transaction
-      </Button>
-
-            {/* ===================================================
-          UPDATES CARD
-          =================================================== */}
-
-      {unreadCount > 0 && (
-        <Card onClick={() => navigate('/updates')} className="p-4 mb-5 flex items-center gap-3 border-primary/30">
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 relative">
-            <Bell size={18} className="text-primary" />
-            <span className="absolute -top-1 -right-1 bg-owe text-white text-[10px] font-semibold rounded-full w-4 h-4 flex items-center justify-center">
-              {unreadCount > 3 ? '3+' : unreadCount}
-            </span>
-          </div>
-          <div>
-            <p className="font-medium text-sm">New updates received</p>
-            <p className="text-xs text-text-muted">{unreadCount} unseen {unreadCount === 1 ? 'update' : 'updates'}</p>
-          </div>
+      <Button onClick={() => navigate('/add-transaction')} className="w-full sm:w-auto"><Plus size={18} aria-hidden="true" />Add Transaction</Button>
+      <div className="dashboard-tools">
+        <Card onClick={() => navigate('/group-funds')}>
+          <span className="tool-icon"><PiggyBank size={22} aria-hidden="true" /></span>
+          <div className="flex-1 min-w-0"><p className="font-semibold">Group Fund</p><p className="text-sm text-text-muted mt-1">View shared fund balance</p></div>
+          <ChevronRight size={18} className="text-text-muted" aria-hidden="true" />
         </Card>
-      )}
-
-      {/* ===================================================
-          GROUP FUND LINK
-          =================================================== */}
-
-      <Card onClick={() => navigate('/group-funds')} className="p-4 mb-5 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-          <PiggyBank size={18} className="text-primary" />
-        </div>
-        <div>
-          <p className="font-medium text-sm">Group Fund</p>
-          <p className="text-xs text-text-muted">View shared fund balance</p>
-        </div>
-      </Card>
-
-
-      {/* ===================================================
-          FRIENDS HEADER
-          =================================================== */}
-
-      <div className="flex items-center justify-between mb-3">
-
-        <h2 className="text-sm font-semibold text-text-muted">
-          Friends
-        </h2>
-
-        <button
-          onClick={() => navigate('/friends')}
-          className="text-xs text-primary font-medium"
-        >
-          See all
-        </button>
-
+        {unreadCount > 0 && <Card onClick={() => navigate('/updates')}>
+          <span className="tool-icon"><Bell size={22} aria-hidden="true" /></span>
+          <div className="flex-1 min-w-0"><p className="font-semibold">New updates received</p><p className="text-sm text-text-muted mt-1">{unreadCount} unseen {unreadCount === 1 ? 'update' : 'updates'}</p></div>
+          <ChevronRight size={18} className="text-text-muted" aria-hidden="true" />
+        </Card>}
       </div>
-
-
-      {/* ===================================================
-          FRIENDS CONTENT
-          =================================================== */}
-
-      {loading ? (
-
-        <div className="space-y-2">
-
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-16 bg-white/60 rounded-2xl animate-pulse border border-border"
-            />
-          ))}
-
-        </div>
-
-      ) : friends.length === 0 ? (
-
-        <Card className="p-2">
-
-          <EmptyState
-            icon={Wallet}
-            title="No friends yet"
-            subtitle="Add a friend to start tracking money together"
-          />
-
+      <div className="section-heading"><h2>Friends</h2><Link to="/friends">See all <ChevronRight size={16} aria-hidden="true" /></Link></div>
+      {loading ? <LoadingState label="Loading friends" /> : friends.length === 0 ? (
+        <Card><EmptyState icon={Wallet} title="No friends yet" subtitle="Add a friend to start tracking money together" /></Card>
+      ) : <div className="record-list">{friends.map((f) => (
+        <Card key={f.friendshipId} onClick={() => navigate('/friends/' + f.friend.id)} className="p-4 flex items-center gap-4">
+          <Avatar name={f.friend.full_name} /><span className="font-semibold flex-1 min-w-0">{f.friend.full_name}</span><ChevronRight size={18} className="text-text-muted" aria-hidden="true" />
         </Card>
-
-      ) : (
-
-        <div className="space-y-2">
-
-          {friends.map((f) => (
-
-            <Card
-              key={f.friendshipId}
-              onClick={() => navigate(`/friends/${f.friend.id}`)}
-              className="p-3 flex items-center gap-3"
-            >
-
-              <Avatar name={f.friend.full_name} />
-
-              <span className="font-medium">
-                {f.friend.full_name}
-              </span>
-
-            </Card>
-
-          ))}
-
-        </div>
-
-      )}
-
+      ))}</div>}
     </div>
   )
 }
@@ -504,7 +299,9 @@ function App() {
       {/* Bottom navigation is hidden automatically
           when user is not logged in */}
 
-      <BottomNav />
+      <a className="skip-link" href="#main-content">Skip to content</a>
+      <AppNavigation />
+      <RouteFrame>
 
 
       <Routes>
@@ -692,6 +489,14 @@ function App() {
           }
         />
         <Route
+          path="/group-fund/:fundId/deposit"
+          element={
+            <ProtectedRoute>
+              <DepositFund />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/group-fund/:fundId/history"
           element={
             <ProtectedRoute>
@@ -717,6 +522,7 @@ function App() {
         />
 
       </Routes>
+      </RouteFrame>
 
     </BrowserRouter>
   )

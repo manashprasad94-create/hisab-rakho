@@ -1,0 +1,448 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-06T08:28:21.0968206Z",
+  "title": "Design System: Hisab Kitab — Ink & Marigold",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "displayName": "Ledger Ink",
+        "role": "primary",
+        "tonalRamp": [
+          "oklch(15% 0.06 255)",
+          "oklch(27% 0.06 255)",
+          "oklch(39% 0.06 255)",
+          "oklch(51% 0.06 255)",
+          "oklch(63% 0.06 255)",
+          "oklch(75% 0.06 255)",
+          "oklch(87% 0.06 255)",
+          "oklch(95% 0.06 255)"
+        ],
+        "canonical": "#203047"
+      },
+      "primaryHover": {
+        "displayName": "Deep Ink",
+        "role": "primary",
+        "tonalRamp": [
+          "oklch(15% 0.06 255)",
+          "oklch(27% 0.06 255)",
+          "oklch(39% 0.06 255)",
+          "oklch(51% 0.06 255)",
+          "oklch(63% 0.06 255)",
+          "oklch(75% 0.06 255)",
+          "oklch(87% 0.06 255)",
+          "oklch(95% 0.06 255)"
+        ],
+        "canonical": "#162438"
+      },
+      "accent": {
+        "displayName": "Marigold",
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(15% 0.14 85)",
+          "oklch(27% 0.14 85)",
+          "oklch(39% 0.14 85)",
+          "oklch(51% 0.14 85)",
+          "oklch(63% 0.14 85)",
+          "oklch(75% 0.14 85)",
+          "oklch(87% 0.14 85)",
+          "oklch(95% 0.14 85)"
+        ],
+        "canonical": "#F2BE49"
+      },
+      "accentSoft": {
+        "displayName": "Marigold Paper",
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(15% 0.035 85)",
+          "oklch(27% 0.035 85)",
+          "oklch(39% 0.035 85)",
+          "oklch(51% 0.035 85)",
+          "oklch(63% 0.035 85)",
+          "oklch(75% 0.035 85)",
+          "oklch(87% 0.035 85)",
+          "oklch(95% 0.035 85)"
+        ],
+        "canonical": "#FFF5D8"
+      },
+      "canvas": {
+        "displayName": "Soft Canvas",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.005 125)",
+          "oklch(27% 0.005 125)",
+          "oklch(39% 0.005 125)",
+          "oklch(51% 0.005 125)",
+          "oklch(63% 0.005 125)",
+          "oklch(75% 0.005 125)",
+          "oklch(87% 0.005 125)",
+          "oklch(95% 0.005 125)"
+        ],
+        "canonical": "#F4F5F2"
+      },
+      "surface": {
+        "displayName": "White Paper",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0 0)",
+          "oklch(27% 0 0)",
+          "oklch(39% 0 0)",
+          "oklch(51% 0 0)",
+          "oklch(63% 0 0)",
+          "oklch(75% 0 0)",
+          "oklch(87% 0 0)",
+          "oklch(95% 0 0)"
+        ],
+        "canonical": "#FFFFFF"
+      },
+      "surfaceMuted": {
+        "displayName": "Muted Paper",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.008 130)",
+          "oklch(27% 0.008 130)",
+          "oklch(39% 0.008 130)",
+          "oklch(51% 0.008 130)",
+          "oklch(63% 0.008 130)",
+          "oklch(75% 0.008 130)",
+          "oklch(87% 0.008 130)",
+          "oklch(95% 0.008 130)"
+        ],
+        "canonical": "#ECEFEA"
+      },
+      "text": {
+        "displayName": "Ledger Text",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.025 250)",
+          "oklch(27% 0.025 250)",
+          "oklch(39% 0.025 250)",
+          "oklch(51% 0.025 250)",
+          "oklch(63% 0.025 250)",
+          "oklch(75% 0.025 250)",
+          "oklch(87% 0.025 250)",
+          "oklch(95% 0.025 250)"
+        ],
+        "canonical": "#202A35"
+      },
+      "textMuted": {
+        "displayName": "Supporting Text",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.025 250)",
+          "oklch(27% 0.025 250)",
+          "oklch(39% 0.025 250)",
+          "oklch(51% 0.025 250)",
+          "oklch(63% 0.025 250)",
+          "oklch(75% 0.025 250)",
+          "oklch(87% 0.025 250)",
+          "oklch(95% 0.025 250)"
+        ],
+        "canonical": "#5D6872"
+      },
+      "border": {
+        "displayName": "Ledger Divider",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.008 140)",
+          "oklch(27% 0.008 140)",
+          "oklch(39% 0.008 140)",
+          "oklch(51% 0.008 140)",
+          "oklch(63% 0.008 140)",
+          "oklch(75% 0.008 140)",
+          "oklch(87% 0.008 140)",
+          "oklch(95% 0.008 140)"
+        ],
+        "canonical": "#D8DED8"
+      },
+      "controlBorder": {
+        "displayName": "Field Boundary",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.025 240)",
+          "oklch(27% 0.025 240)",
+          "oklch(39% 0.025 240)",
+          "oklch(51% 0.025 240)",
+          "oklch(63% 0.025 240)",
+          "oklch(75% 0.025 240)",
+          "oklch(87% 0.025 240)",
+          "oklch(95% 0.025 240)"
+        ],
+        "canonical": "#84919A"
+      },
+      "success": {
+        "displayName": "Receive Green",
+        "role": "semantic",
+        "tonalRamp": [
+          "oklch(15% 0.09 160)",
+          "oklch(27% 0.09 160)",
+          "oklch(39% 0.09 160)",
+          "oklch(51% 0.09 160)",
+          "oklch(63% 0.09 160)",
+          "oklch(75% 0.09 160)",
+          "oklch(87% 0.09 160)",
+          "oklch(95% 0.09 160)"
+        ],
+        "canonical": "#176548"
+      },
+      "successSoft": {
+        "displayName": "Receive Paper",
+        "role": "semantic",
+        "tonalRamp": [
+          "oklch(15% 0.015 160)",
+          "oklch(27% 0.015 160)",
+          "oklch(39% 0.015 160)",
+          "oklch(51% 0.015 160)",
+          "oklch(63% 0.015 160)",
+          "oklch(75% 0.015 160)",
+          "oklch(87% 0.015 160)",
+          "oklch(95% 0.015 160)"
+        ],
+        "canonical": "#EAF4EE"
+      },
+      "error": {
+        "displayName": "Pay Red",
+        "role": "semantic",
+        "tonalRamp": [
+          "oklch(15% 0.15 20)",
+          "oklch(27% 0.15 20)",
+          "oklch(39% 0.15 20)",
+          "oklch(51% 0.15 20)",
+          "oklch(63% 0.15 20)",
+          "oklch(75% 0.15 20)",
+          "oklch(87% 0.15 20)",
+          "oklch(95% 0.15 20)"
+        ],
+        "canonical": "#AD3545"
+      },
+      "errorSoft": {
+        "displayName": "Pay Paper",
+        "role": "semantic",
+        "tonalRamp": [
+          "oklch(15% 0.015 20)",
+          "oklch(27% 0.015 20)",
+          "oklch(39% 0.015 20)",
+          "oklch(51% 0.015 20)",
+          "oklch(63% 0.015 20)",
+          "oklch(75% 0.015 20)",
+          "oklch(87% 0.015 20)",
+          "oklch(95% 0.015 20)"
+        ],
+        "canonical": "#FCEEF0"
+      },
+      "pending": {
+        "displayName": "Pending Amber",
+        "role": "semantic",
+        "tonalRamp": [
+          "oklch(15% 0.09 75)",
+          "oklch(27% 0.09 75)",
+          "oklch(39% 0.09 75)",
+          "oklch(51% 0.09 75)",
+          "oklch(63% 0.09 75)",
+          "oklch(75% 0.09 75)",
+          "oklch(87% 0.09 75)",
+          "oklch(95% 0.09 75)"
+        ],
+        "canonical": "#865B13"
+      },
+      "pendingSoft": {
+        "displayName": "Pending Paper",
+        "role": "semantic",
+        "tonalRamp": [
+          "oklch(15% 0.035 85)",
+          "oklch(27% 0.035 85)",
+          "oklch(39% 0.035 85)",
+          "oklch(51% 0.035 85)",
+          "oklch(63% 0.035 85)",
+          "oklch(75% 0.035 85)",
+          "oklch(87% 0.035 85)",
+          "oklch(95% 0.035 85)"
+        ],
+        "canonical": "#FFF5D8"
+      }
+    },
+    "typographyMeta": {
+      "body": {
+        "purpose": "Body text and form fields.",
+        "displayName": "Body"
+      },
+      "headline": {
+        "purpose": "Page headings; grows to 32px at 900px.",
+        "displayName": "Product headline"
+      },
+      "title": {
+        "purpose": "Names and section titles.",
+        "displayName": "Record title"
+      },
+      "metadata": {
+        "purpose": "Badges and compact navigation labels.",
+        "displayName": "Metadata"
+      },
+      "label": {
+        "purpose": "Form labels and supporting copy.",
+        "displayName": "Label"
+      }
+    },
+    "shadows": [
+      {
+        "purpose": "Standalone interactive card hover.",
+        "name": "small",
+        "value": "0 2px 5px rgb(32 48 71 / 4%)"
+      },
+      {
+        "purpose": "Elevated supporting surfaces.",
+        "name": "medium",
+        "value": "0 8px 24px rgb(32 48 71 / 8%)"
+      },
+      {
+        "purpose": "Primary button hover.",
+        "name": "primary-hover",
+        "value": "0 3px 8px rgb(32 48 71 / 16%)"
+      }
+    ],
+    "motion": [
+      {
+        "purpose": "Color, border and shadow transitions.",
+        "name": "control-feedback",
+        "value": "160ms"
+      },
+      {
+        "purpose": "Interactive card transitions.",
+        "name": "card-feedback",
+        "value": "180ms"
+      },
+      {
+        "purpose": "Transitions and decorative animation disabled.",
+        "name": "reduced-motion",
+        "value": "0ms"
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "narrow",
+        "value": "380px"
+      },
+      {
+        "name": "tools",
+        "value": "540px"
+      },
+      {
+        "name": "choices",
+        "value": "640px"
+      },
+      {
+        "name": "sidebar",
+        "value": "900px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary button",
+      "refersTo": "primaryButton",
+      "kind": "button",
+      "description": "Shared action with comfortable targets and visible focus.",
+      "html": "<button class=\"ds-button\">Add Transaction</button>",
+      "css": ".ds-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:12px 20px;border:1px solid transparent;border-radius:var(--control-radius,12px);font-family:Manrope,sans-serif;font-size:16px;font-weight:700;line-height:1.4;transition:background-color 160ms,border-color 160ms,box-shadow 160ms}.ds-button:focus-visible{outline:3px solid var(--color-primary,#203047);outline-offset:4px}.ds-button:active:not(:disabled){box-shadow:inset 0 1px 3px rgb(0 0 0 / 12%)}.ds-button:disabled{background:var(--color-surface-muted,#ecefea);border-color:var(--color-border,#d8ded8);color:var(--color-text-muted,#5d6872);opacity:1}@media(prefers-reduced-motion:reduce){.ds-button{transition:none}}.ds-button{background:var(--color-primary,#203047);color:var(--color-bg,#fff)}.ds-button:hover:not(:disabled){background:var(--color-primary-dark,#162438);box-shadow:0 3px 8px rgb(32 48 71 / 16%)}"
+    },
+    {
+      "name": "Secondary button",
+      "refersTo": "secondaryButton",
+      "kind": "button",
+      "description": "Shared action with comfortable targets and visible focus.",
+      "html": "<button class=\"ds-button\">Cancel</button>",
+      "css": ".ds-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:12px 20px;border:1px solid transparent;border-radius:var(--control-radius,12px);font-family:Manrope,sans-serif;font-size:16px;font-weight:700;line-height:1.4;transition:background-color 160ms,border-color 160ms,box-shadow 160ms}.ds-button:focus-visible{outline:3px solid var(--color-primary,#203047);outline-offset:4px}.ds-button:active:not(:disabled){box-shadow:inset 0 1px 3px rgb(0 0 0 / 12%)}.ds-button:disabled{background:var(--color-surface-muted,#ecefea);border-color:var(--color-border,#d8ded8);color:var(--color-text-muted,#5d6872);opacity:1}@media(prefers-reduced-motion:reduce){.ds-button{transition:none}}.ds-button{background:var(--color-bg,#fff);color:var(--color-text,#202a35);border-color:var(--color-border,#d8ded8)}.ds-button:hover:not(:disabled){background:var(--color-surface-muted,#ecefea);border-color:#8c989f}"
+    },
+    {
+      "name": "Danger button",
+      "refersTo": "dangerButton",
+      "kind": "button",
+      "description": "Shared action with comfortable targets and visible focus.",
+      "html": "<button class=\"ds-button\">Delete</button>",
+      "css": ".ds-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:12px 20px;border:1px solid transparent;border-radius:var(--control-radius,12px);font-family:Manrope,sans-serif;font-size:16px;font-weight:700;line-height:1.4;transition:background-color 160ms,border-color 160ms,box-shadow 160ms}.ds-button:focus-visible{outline:3px solid var(--color-primary,#203047);outline-offset:4px}.ds-button:active:not(:disabled){box-shadow:inset 0 1px 3px rgb(0 0 0 / 12%)}.ds-button:disabled{background:var(--color-surface-muted,#ecefea);border-color:var(--color-border,#d8ded8);color:var(--color-text-muted,#5d6872);opacity:1}@media(prefers-reduced-motion:reduce){.ds-button{transition:none}}.ds-button{background:var(--color-bg,#fff);color:var(--color-owe,#ad3545);border-color:#e8bec6}.ds-button:hover:not(:disabled){background:var(--color-error-soft,#fceef0)}"
+    },
+    {
+      "name": "Ghost button",
+      "refersTo": "ghostButton",
+      "kind": "button",
+      "description": "Shared action with comfortable targets and visible focus.",
+      "html": "<button class=\"ds-button\">Back</button>",
+      "css": ".ds-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:12px 20px;border:1px solid transparent;border-radius:var(--control-radius,12px);font-family:Manrope,sans-serif;font-size:16px;font-weight:700;line-height:1.4;transition:background-color 160ms,border-color 160ms,box-shadow 160ms}.ds-button:focus-visible{outline:3px solid var(--color-primary,#203047);outline-offset:4px}.ds-button:active:not(:disabled){box-shadow:inset 0 1px 3px rgb(0 0 0 / 12%)}.ds-button:disabled{background:var(--color-surface-muted,#ecefea);border-color:var(--color-border,#d8ded8);color:var(--color-text-muted,#5d6872);opacity:1}@media(prefers-reduced-motion:reduce){.ds-button{transition:none}}.ds-button{background:transparent;color:var(--color-text-muted,#5d6872)}.ds-button:hover:not(:disabled){background:var(--color-surface-muted,#ecefea);color:var(--color-text,#202a35)}"
+    },
+    {
+      "name": "Text field",
+      "refersTo": "input",
+      "kind": "input",
+      "description": "Associated label and clear control boundary.",
+      "html": "<label class=\"ds-field\">Amount<input class=\"ds-input\" inputmode=\"decimal\" placeholder=\"0.00\" /></label>",
+      "css": ".ds-field{display:grid;gap:8px;font:600 14px Manrope,sans-serif;color:var(--color-text,#202a35)}.ds-input{min-height:48px;padding:12px 14px;border:1px solid var(--color-control-border,#84919a);border-radius:var(--control-radius,12px);background:var(--color-bg,#fff);color:var(--color-text,#202a35);font:400 16px/1.5 Manrope,sans-serif;font-variant-numeric:tabular-nums;transition:border-color 160ms}.ds-input:hover:not(:disabled){border-color:#8c989f}.ds-input:focus{border-color:var(--color-primary,#203047);outline:2px solid var(--color-primary,#203047);outline-offset:2px}.ds-input:disabled{background:var(--color-surface-muted,#ecefea);color:var(--color-text-muted,#5d6872)}.ds-input[aria-invalid=\"true\"]{border-color:var(--color-owe,#ad3545)}"
+    },
+    {
+      "name": "Selected navigation",
+      "refersTo": "selectedNavigation",
+      "kind": "nav",
+      "description": "Selected ledger destination with restrained marigold marker.",
+      "html": "<nav><a class=\"ds-nav\" href=\"#home\" aria-current=\"page\">Home</a></nav>",
+      "css": ".ds-nav{position:relative;display:flex;align-items:center;min-height:48px;padding:12px 16px;border-radius:12px;background:var(--color-accent-soft,#fff5d8);color:var(--color-primary,#203047);font:750 14px Manrope,sans-serif;text-decoration:none;transition:background-color 160ms}.ds-nav:after{content:\"\";position:absolute;right:14px;width:5px;height:5px;border-radius:8px;background:var(--color-accent,#f2be49)}.ds-nav:hover{background:var(--color-accent-soft,#fff5d8)}.ds-nav:focus-visible{outline:3px solid var(--color-primary,#203047);outline-offset:3px}"
+    },
+    {
+      "name": "Status badge",
+      "refersTo": "successBadge",
+      "kind": "chip",
+      "description": "Explicit semantic status text.",
+      "html": "<span class=\"ds-badge\">Settled</span>",
+      "css": ".ds-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:8px;background:var(--color-success-soft,#eaf4ee);color:var(--color-receive,#176548);font:650 12px/1.5 Manrope,sans-serif}"
+    },
+    {
+      "name": "Interactive card",
+      "refersTo": "card",
+      "kind": "card",
+      "description": "Flat standalone container with subtle interaction feedback.",
+      "html": "<button class=\"ds-card\">Group Fund</button>",
+      "css": ".ds-card{display:block;text-align:left;padding:24px;border:1px solid var(--color-border,#d8ded8);border-radius:var(--card-radius,16px);background:var(--color-bg,#fff);color:var(--color-text,#202a35);font:650 16px Manrope,sans-serif;transition:border-color 180ms,box-shadow 180ms,background-color 180ms}.ds-card:hover{border-color:#8c989f;box-shadow:0 2px 5px rgb(32 48 71 / 4%);background:#f7f8f5}.ds-card:active{background:var(--color-surface-muted,#ecefea)}.ds-card:focus-visible{outline:3px solid var(--color-primary,#203047);outline-offset:3px}"
+    },
+    {
+      "description": "Grouped record with aligned name and tabular receive amount.",
+      "css": ".ds-ledger{border:1px solid var(--color-border,#d8ded8);border-radius:16px;background:var(--color-bg,#fff)}.ds-row{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;padding:20px 24px;border:0;border-radius:16px;background:transparent;text-align:left;color:var(--color-text,#202a35);font:650 16px Manrope,sans-serif;transition:background-color 180ms}.ds-meta{display:block;margin-top:8px;color:var(--color-text-muted,#5d6872);font-size:14px;font-weight:400;line-height:1.6}.ds-amount{flex-shrink:0;color:var(--color-receive,#176548);font-variant-numeric:tabular-nums}.ds-row:hover,.ds-row:active{background:var(--color-surface-muted,#ecefea)}.ds-row:focus-visible{outline:3px solid var(--color-primary,#203047);outline-offset:-4px}",
+      "name": "Ledger row",
+      "html": "<div class=\"ds-ledger\"><button class=\"ds-row\"><span class=\"ds-name\">Sourabh Kumar<span class=\"ds-meta\">To receive</span></span><span class=\"ds-amount\">₹625</span></button></div>",
+      "kind": "custom"
+    }
+  ],
+  "narrative": {
+    "donts": [
+      "Don't use green/red as decorative branding or neutral notification colors.",
+      "Don't hide focus, fade disabled text or depend on color alone.",
+      "Don't introduce arbitrary typography, radii, gradients or per-page systems."
+    ],
+    "overview": "Ink establishes trust and legibility; restrained marigold adds familiar warmth and memorable identity. People, amounts, and next actions read like a clear, friendly ledger. Shared white surfaces, muted supporting tools, and quiet dividers give the interface a dependable everyday character.",
+    "dos": [
+      "Do prioritize people, financial direction, amounts and required actions.",
+      "Do reuse tokens/components across product and public screens.",
+      "Do keep marigold restrained and status explicitly labeled.",
+      "Do preserve contrast, comfortable targets and mobile wrapping."
+    ],
+    "rules": [
+      {
+        "body": "Always pair financial colors with explicit labels, signs, icons, or status text.",
+        "name": "The Labeled Direction Rule",
+        "section": "colors"
+      },
+      {
+        "body": "Monetary amounts and form controls use tabular numerals. Long names, emails, and amounts wrap. Public-page headlines can be larger within the same family and palette.",
+        "name": "The Ledger Numerals Rule",
+        "section": "typography"
+      },
+      {
+        "body": "Records inside grouped lists use dividers and surface tint for hover, without individual shadows.",
+        "name": "The Flat Ledger Rule",
+        "section": "elevation"
+      }
+    ],
+    "northStar": "Ink & Marigold",
+    "keyCharacteristics": [
+      "Clear financial direction and tabular amounts.",
+      "Restrained marigold identity within a neutral ledger.",
+      "Comfortable controls and compact, readable record rows."
+    ]
+  }
+}

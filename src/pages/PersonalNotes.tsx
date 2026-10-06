@@ -1,8 +1,11 @@
+import LoadingState from '../components/LoadingState'
+import PageHeader from '../components/PageHeader'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, StickyNote, Trash2 } from 'lucide-react'
 import { listExternalTransactions, markExternalAsSettled, deleteExternalTransaction } from '../lib/externalTransactions'
 import Card from '../components/card'
+import Badge from '../components/Badge'
 import EmptyState from '../components/EmptyState'
 import Button from '../components/Button'
 
@@ -46,11 +49,11 @@ export default function PersonalNotes() {
     .reduce((sum, n) => sum + Number(n.remaining_amount), 0)
 
   return (
-    <div className="min-h-screen bg-bg-soft p-4 pb-24">
+    <div className="app-page">
       <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-text-muted mb-3 text-sm">
         <ArrowLeft size={16} /> Back
       </button>
-      <h1 className="text-xl font-semibold mb-1">Personal Notes</h1>
+      <PageHeader title={<> Personal Notes </>} />
       <p className="text-xs text-text-muted mb-4">Only visible to you — for people who don't use Hisab Kitab</p>
 
       <div className="flex gap-3 mb-5">
@@ -65,15 +68,13 @@ export default function PersonalNotes() {
       </div>
 
       {loading ? (
-        <div className="space-y-2">
-          {[1, 2].map((i) => <div key={i} className="h-16 bg-white/60 rounded-2xl animate-pulse border border-border" />)}
-        </div>
+        <LoadingState />
       ) : notes.length === 0 ? (
         <Card className="p-2">
           <EmptyState icon={StickyNote} title="No notes yet" subtitle="Add one from 'Add Transaction' → Not in your friends list?" />
         </Card>
       ) : (
-        <div className="space-y-2">
+        <div className="record-list">
           {notes.map((n) => {
             const isSettled = n.status === 'settled'
             return (
@@ -83,12 +84,12 @@ export default function PersonalNotes() {
               >
                 <div className="flex justify-between items-center">
                   <div>
-                    <p className="font-medium text-sm">{n.contact_name}</p>
+                    <p className="record-title">{n.contact_name}</p>
                     <p className="text-xs text-text-muted">
-                      {n.reason || 'No reason'} · {isSettled ? 'settled' : n.direction === 'they_owe_me' ? 'they owe you' : 'you owe them'}
+                      {n.reason || 'No reason'}<span className="record-status"><Badge tone={isSettled ? 'success' : n.direction === 'they_owe_me' ? 'success' : 'error'}>{isSettled ? 'Settled' : n.direction === 'they_owe_me' ? 'They owe you' : 'You owe them'}</Badge></span>
                     </p>
                   </div>
-                  <p className={`font-semibold ${isSettled ? 'text-primary' : n.direction === 'they_owe_me' ? 'text-receive' : 'text-owe'}`}>
+                  <p className={`font-semibold ${isSettled ? 'text-receive' : n.direction === 'they_owe_me' ? 'text-receive' : 'text-owe'}`}>
                     {isSettled ? '✓' : `₹${Number(n.remaining_amount).toFixed(2)}`}
                   </p>
                 </div>
@@ -99,7 +100,8 @@ export default function PersonalNotes() {
                     </Button>
                     <button
                       onClick={() => handleDeleteClick(n.id)}
-                      className={`transition px-2 ${confirmDeleteId === n.id ? 'text-owe font-medium text-xs bg-owe/10 rounded-lg py-1' : 'text-text-muted hover:text-owe'}`}
+                      aria-label={confirmDeleteId === n.id ? 'Confirm deleting note' : 'Delete note'}
+                      className={`icon-button transition px-2 ${confirmDeleteId === n.id ? 'text-owe font-medium text-xs bg-owe/10 rounded-lg py-1' : 'text-text-muted hover:text-owe'}`}
                     >
                       {confirmDeleteId === n.id ? 'Confirm?' : <Trash2 size={15} />}
                     </button>

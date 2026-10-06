@@ -1,5 +1,9 @@
-import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import LoadingState from '../components/LoadingState'
+import StatusMessage from '../components/StatusMessage'
+import PageHeader from '../components/PageHeader'
+import { Input } from '../components/FormControls'
+import { useCallback, useEffect, useState } from 'react'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Plus, Receipt, CheckCircle2, Pencil } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
@@ -15,40 +19,100 @@ import {
 } from '../lib/transactions'
 import { generateUpiLink } from '../lib/upi'
 import Card from '../components/card'
+import Badge from '../components/Badge'
 import Button from '../components/Button'
 import Avatar from '../components/Avatar'
 import EmptyState from '../components/EmptyState'
 import { sendEmailReminder } from '../lib/notify'
+import { errorMessage } from '../lib/errorMessage'
 
 export default function FriendDetail() {
   const { friendId } = useParams<{ friendId: string }>()
   const navigate = useNavigate()
-  const { user , profile } = useAuthStore()
+  const { user } = useAuthStore()
+  const [searchParams] = useSearchParams()
+  const targetId = searchParams.get('transaction')
+  const [linkedTransaction, setLinkedTransaction] = useState<any>(null)
   const [friend, setFriend] = useState<any>(null)
   const [transactions, setTransactions] = useState<any[]>([])
   const [pendingByTxn, setPendingByTxn] = useState<Record<string, any[]>>({})
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
+  const [error, setError] = useState('')
+  const [actionError, setActionError] = useState('')
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!friendId) return
-    const { data: friendProfile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', friendId)
-      .single()
-    setFriend(friendProfile)
+    setError('')
+    try {
+      const { data: friendProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', friendId)
+        .single()
+      if (profileError) throw profileError
+      setFriend(friendProfile)
 
-    const txns = await listTransactionsWithFriend(friendId)
-    setTransactions(txns)
+      const txns = await listTransactionsWithFriend(friendId)
+      setTransactions(txns)
+      setHasMore(txns.length === 50)
 
-    const pendingMap: Record<string, any[]> = {}
-    for (const t of txns) {
-      if (t.status !== 'settled' && t.status !== 'pending_acceptance') {
-        pendingMap[t.id] = await getPendingPaymentRecords(t.id)
+      let target = null
+      if (targetId && /^[0-9a-f-]{36}$/i.test(targetId) && user && !txns.some((t) => t.id === targetId)) {
+        const { data, error: targetError } = await supabase.from('friend_transactions')
+          .select('*').eq('id', targetId)
+          .or(`and(payer_id.eq.${user.id},payee_id.eq.${friendId}),and(payer_id.eq.${friendId},payee_id.eq.${user.id})`)
+          .maybeSingle()
+        if (targetError) throw targetError
+        target = data
       }
+      setLinkedTransaction(target)
+      if (targetId && !target && !txns.some((t) => t.id === targetId)) {
+        setActionError('The linked transaction is unavailable or has been removed.')
+      }
+      const visible = target ? [...txns, target] : txns
+      const ids = visible.filter((t) => t.status !== 'settled' && t.status !== 'pending_acceptance').map((t) => t.id)
+      const records = await getPendingPaymentRecords(ids)
+      const pendingMap: Record<string, any[]> = {}
+      for (const record of records) {
+        if (!pendingMap[record.transaction_id]) pendingMap[record.transaction_id] = []
+        pendingMap[record.transaction_id].push(record)
+      }
+      setPendingByTxn(pendingMap)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not load friend details')
+    } finally {
+      setLoading(false)
     }
-    setPendingByTxn(pendingMap)
-    setLoading(false)
+  }, [friendId, targetId, user])
+
+  useEffect(() => {
+    if (!loading && targetId) {
+      document.getElementById(`transaction-${targetId}`)?.scrollIntoView({ block: 'center' })
+    }
+  }, [loading, targetId, transactions, linkedTransaction])
+
+  const loadMore = async () => {
+    if (!friendId || loadingMore) return
+    setLoadingMore(true)
+    try {
+      const next = await listTransactionsWithFriend(friendId, transactions.length)
+      const ids = next.filter((t) => t.status !== 'settled' && t.status !== 'pending_acceptance').map((t) => t.id)
+      const records = await getPendingPaymentRecords(ids)
+      const morePending: Record<string, any[]> = {}
+      for (const record of records) {
+        if (!morePending[record.transaction_id]) morePending[record.transaction_id] = []
+        morePending[record.transaction_id].push(record)
+      }
+      setTransactions((current) => [...current, ...next])
+      setPendingByTxn((current) => ({ ...current, ...morePending }))
+      setHasMore(next.length === 50)
+    } catch (err) {
+      setActionError(errorMessage(err, 'Could not load more transactions'))
+    } finally {
+      setLoadingMore(false)
+    }
   }
 
   useEffect(() => {
@@ -67,7 +131,7 @@ export default function FriendDetail() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [friendId])
+  }, [friendId, loadData])
 
   const netBalance = transactions.reduce((sum, t) => {
     if (t.status === 'settled' || t.status === 'pending_acceptance') return sum
@@ -76,7 +140,9 @@ export default function FriendDetail() {
   }, 0)
 
   // Group transactions by date (e.g. "15 Aug 2026")
-  const groupedByDate = transactions.reduce((groups: Record<string, any[]>, t) => {
+  const visibleTransactions = linkedTransaction && !transactions.some((t) => t.id === linkedTransaction.id)
+    ? [...transactions, linkedTransaction] : transactions
+  const groupedByDate = visibleTransactions.reduce((groups: Record<string, any[]>, t) => {
     const dateKey = new Date(t.created_at).toLocaleDateString('en-IN', {
       day: 'numeric',
       month: 'short',
@@ -87,29 +153,36 @@ export default function FriendDetail() {
     return groups
   }, {})
 
-  const handleMarkPaid = async (transactionId: string, amount: number) => {
-    await markAsPaid(transactionId, amount)
-    loadData()
+  const runAction = async (action: () => Promise<unknown>) => {
+    setActionError('')
+    try {
+      await action()
+      await loadData()
+      return true
+    } catch (err) {
+      setActionError(errorMessage(err, 'Could not update the transaction'))
+      return false
+    }
   }
 
-  const handleConfirm = async (paymentRecordId: string, transactionId: string, amount: number) => {
-    await confirmPayment(paymentRecordId, transactionId, amount)
-    loadData()
+  const handleMarkPaid = async (transactionId: string, amount: number) => {
+    await runAction(() => markAsPaid(transactionId, amount))
+  }
+
+  const handleConfirm = async (paymentRecordId: string) => {
+    await runAction(() => confirmPayment(paymentRecordId))
   }
 
   const handleReject = async (paymentRecordId: string) => {
-    await rejectPayment(paymentRecordId)
-    loadData()
+    await runAction(() => rejectPayment(paymentRecordId))
   }
 
   const handleAcceptTxn = async (transactionId: string) => {
-    await acceptTransaction(transactionId)
-    loadData()
+    await runAction(() => acceptTransaction(transactionId))
   }
 
   const handleRejectTxn = async (transactionId: string) => {
-    await rejectTransaction(transactionId)
-    loadData()
+    await runAction(() => rejectTransaction(transactionId))
   }
 
     const [editingId, setEditingId] = useState<string | null>(null)
@@ -124,33 +197,51 @@ export default function FriendDetail() {
 
   const saveEdit = async (t: any) => {
     if (!editAmount || Number(editAmount) <= 0) return
-    await editPendingTransaction(t.id, Number(editAmount), editReason, t.category)
-    setEditingId(null)
-    loadData()
+    if (await runAction(() => editPendingTransaction(t.id, Number(editAmount), editReason, t.category))) {
+      setEditingId(null)
+    }
   }
   const [remindedIds, setRemindedIds] = useState<Set<string>>(new Set())
+  const [remindingIds, setRemindingIds] = useState<Set<string>>(new Set())
 
-  const handleRemind = async (message: string, id: string) => {
-    await sendEmailReminder(friend.email, friend.full_name, message)
-    setRemindedIds((prev) => new Set(prev).add(id))
+  const handleRemind = async (id: string) => {
+    if (remindingIds.has(id) || remindedIds.has(id)) return
+    setActionError('')
+    setRemindingIds((prev) => new Set(prev).add(id))
+    try {
+      await sendEmailReminder(id)
+      setRemindedIds((prev) => new Set(prev).add(id))
+    } catch (err) {
+      setActionError(errorMessage(err, 'Could not send reminder'))
+    } finally {
+      setRemindingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    }
   }
 
   const handlePayViaUpi = (upiId: string, name: string, amount: number, note: string) => {
     window.location.href = generateUpiLink(upiId, name, amount, note)
   }
 
-  if (loading || !friend) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-bg-soft p-4">
-        <div className="h-8 w-24 bg-white/60 rounded-lg animate-pulse mb-4" />
-        <div className="h-32 bg-white/60 rounded-2xl animate-pulse mb-4" />
-        <div className="h-12 bg-white/60 rounded-xl animate-pulse mb-4" />
+      <div className="app-page">
+        <LoadingState label="Loading transactions" />
       </div>
     )
   }
 
+  if (!friend) {
+    return <div className="app-page"><StatusMessage>{error || 'Friend not found'}</StatusMessage><Button variant="secondary" onClick={() => navigate('/friends')}>Back to Friends</Button></div>
+  }
+
   return (
-    <div className="min-h-screen bg-bg-soft p-4 pb-24">
+    <div className="app-page">
+      {error && <StatusMessage>{error}</StatusMessage>}
+      {actionError && <StatusMessage>{actionError}</StatusMessage>}
       <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-text-muted mb-3 text-sm">
         <ArrowLeft size={16} /> Back
       </button>
@@ -158,12 +249,12 @@ export default function FriendDetail() {
       <div className="flex items-center gap-3 mb-4">
         <Avatar name={friend.full_name} size="lg" />
         <div>
-          <h1 className="text-xl font-semibold">{friend.full_name}</h1>
+          <PageHeader title={<> {friend.full_name} </>} />
           <p className="text-sm text-text-muted">{friend.email}</p>
         </div>
       </div>
 
-      <div className="bg-primary text-white rounded-2xl p-6 mb-4 shadow-sm">
+      <div className={`balance-panel ${netBalance >= 0 ? 'balance-panel-receive' : 'balance-panel-pay'}`}>
         <p className="text-sm opacity-80">{netBalance >= 0 ? "You'll get" : "You'll pay"}</p>
         <p className="text-3xl font-semibold mt-1">₹{Math.abs(netBalance).toFixed(2)}</p>
       </div>
@@ -178,7 +269,7 @@ export default function FriendDetail() {
 
       <h2 className="text-sm font-semibold text-text-muted mb-3">Transaction List</h2>
 
-      {transactions.length === 0 ? (
+      {visibleTransactions.length === 0 ? (
         <Card className="p-2">
           <EmptyState icon={Receipt} title="No transactions yet" subtitle="Add one to start tracking with this friend" />
         </Card>
@@ -187,7 +278,7 @@ export default function FriendDetail() {
           {Object.entries(groupedByDate).map(([dateLabel, txnsOnDate]) => (
             <div key={dateLabel}>
               <p className="text-xs font-semibold text-text-muted mb-2">{dateLabel}</p>
-              <div className="space-y-2">
+              <div className="record-list">
                 {txnsOnDate.map((t) => {
                   const iAmPayee = t.payee_id === user?.id
                   const iCreatedIt = t.created_by === user?.id
@@ -196,32 +287,37 @@ export default function FriendDetail() {
                   const isSettled = t.status === 'settled'
 
                   return (
+                    <div key={t.id} id={`transaction-${t.id}`} className={t.id === targetId ? 'rounded-2xl ring-2 ring-primary scroll-mt-4' : ''}>
                     <Card
-                      key={t.id}
-                      className={`p-3 ${needsMyAcceptance ? 'border-primary border-2' : ''} ${
+                      className={`p-3 transaction-row ${needsMyAcceptance ? 'border-primary border-2' : ''} ${
                         isSettled
-                          ? 'bg-primary/5 border-primary/20'
+                          ? 'bg-success-soft'
                           : t.status !== 'pending_acceptance'
-                          ? 'bg-owe/5 border-owe/20'
+                          ? 'bg-bg'
                           : ''
                       }`}
                     >
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
-                          {isSettled && <CheckCircle2 size={16} className="text-primary shrink-0" />}
+                          {isSettled && <CheckCircle2 size={16} className="text-receive shrink-0" />}
                           <div>
-                            <p className="font-medium text-sm">{t.reason || 'No reason'}</p>
-                            <p className="text-xs text-text-muted capitalize">
-                              {t.category} ·{' '}
+                            <p className="record-title">{t.reason || 'No reason'}</p>
+                            <p className="record-meta text-text-muted capitalize">{t.category}</p>
+                            <div className="record-status">
+                              <Badge tone={isSettled ? 'success' : 'pending'}>
                               {t.status === 'pending_acceptance'
                                 ? 'awaiting response'
                                 : isSettled
                                 ? `settled · originally ₹${t.amount}`
                                 : t.status.replace('_', ' ')}
-                            </p>
+                              </Badge>
+                              {!isSettled && <span className={`record-direction ${iAmPayee ? 'text-owe' : 'text-receive'}`}>
+                                {iAmPayee ? "You'll pay" : "You'll receive"}
+                              </span>}
+                            </div>
                           </div>
                         </div>
-                        <p className={`font-semibold ${isSettled ? 'text-primary' : iAmPayee ? 'text-owe' : 'text-receive'}`}>
+                        <p className={`record-amount font-semibold ${isSettled ? 'text-receive' : iAmPayee ? 'text-owe' : 'text-receive'}`}>
                           {isSettled ? '✓' : `₹${Number(t.remaining_amount).toFixed(2)}`}
                         </p>
                       </div>
@@ -245,11 +341,11 @@ export default function FriendDetail() {
                               <Pencil size={12} /> Edit
                             </button>
                             <button
-                              onClick={() => handleRemind(`${profile?.full_name || 'Someone'} is reminding you to accept the payment of ₹${t.amount} — ${t.reason || 'no reason'} — in Hisab Kitab. Open here: ${window.location.origin}/friends/${user?.id}`, t.id)}
-                              disabled={remindedIds.has(t.id)}
+                              onClick={() => handleRemind(t.id)}
+                              disabled={remindedIds.has(t.id) || remindingIds.has(t.id)}
                               className="text-xs text-primary font-medium disabled:text-text-muted disabled:opacity-70"
                             >
-                              {remindedIds.has(t.id) ? 'Reminded ✓' : 'Remind'}
+                              {remindingIds.has(t.id) ? 'Sending...' : remindedIds.has(t.id) ? 'Reminded ✓' : 'Remind'}
                             </button>
                           </div>
                         </div>
@@ -257,15 +353,15 @@ export default function FriendDetail() {
 
                       {t.status === 'pending_acceptance' && iCreatedIt && editingId === t.id && (
                         <div className="mt-3 p-3 bg-bg-soft rounded-xl">
-                          <label className="block text-xs mb-1 text-text-muted font-medium">Amount</label>
-                          <input
+                          <label htmlFor="frienddetail-field-14" className="block text-xs mb-1 text-text-muted font-medium">Amount</label>
+                          <Input id="frienddetail-field-14"
                             type="number"
                             value={editAmount}
                             onChange={(e) => setEditAmount(e.target.value)}
                             className="w-full mb-2 px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                           />
-                          <label className="block text-xs mb-1 text-text-muted font-medium">Reason</label>
-                          <input
+                          <label htmlFor="frienddetail-field-15" className="block text-xs mb-1 text-text-muted font-medium">Reason</label>
+                          <Input id="frienddetail-field-15"
                             type="text"
                             value={editReason}
                             onChange={(e) => setEditReason(e.target.value)}
@@ -304,7 +400,7 @@ export default function FriendDetail() {
                             pending.map((p) => (
                               <div key={p.id} className="flex gap-2 items-center text-xs w-full">
                                 <span className="text-text-muted flex-1">Claims paid ₹{p.amount}</span>
-                                <Button onClick={() => handleConfirm(p.id, t.id, p.amount)} className="text-xs py-1.5 px-3">
+                                <Button onClick={() => handleConfirm(p.id)} className="text-xs py-1.5 px-3">
                                   Confirm
                                 </Button>
                                 <Button variant="danger" onClick={() => handleReject(p.id)} className="text-xs py-1.5 px-3">
@@ -317,23 +413,28 @@ export default function FriendDetail() {
                             <div className="flex items-center justify-between w-full">
                               <span className="text-xs text-text-muted">Waiting for confirmation...</span>
                               <button
-                                onClick={() => handleRemind(`${profile?.full_name || 'Someone'} is reminding you to confirm the payment of ₹${t.remaining_amount} — ${t.reason || 'no reason'} — in Hisab Kitab. 
-                                  Open here: ${window.location.origin}/friends/${user?.id}`, t.id)}
-                                disabled={remindedIds.has(t.id)}
+                                onClick={() => handleRemind(t.id)}
+                                disabled={remindedIds.has(t.id) || remindingIds.has(t.id)}
                                 className="text-xs text-primary font-medium disabled:text-text-muted disabled:opacity-70"
                               >
-                                {remindedIds.has(t.id) ? 'Reminded ' : 'Remind'}
+                                {remindingIds.has(t.id) ? 'Sending...' : remindedIds.has(t.id) ? 'Reminded ' : 'Remind'}
                               </button>
                             </div>
                           )}
                         </div>
                       )}
                     </Card>
+                    </div>
                   )
                 })}
               </div>
             </div>
           ))}
+          {hasMore && (
+            <Button variant="secondary" onClick={loadMore} loading={loadingMore} className="w-full">
+              {loadingMore ? 'Loading...' : 'Load more'}
+            </Button>
+          )}
         </div>
       )}
     </div>

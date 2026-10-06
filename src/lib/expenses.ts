@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { useAuthStore } from '../store/authStore'
+import { localDate } from './localDate'
 
 export async function addExpense(amount: number, category: string, note: string, spentOn: string, paymentMode: 'cash' | 'online' = 'online') {
   const userId = useAuthStore.getState().user?.id
@@ -14,15 +15,22 @@ export async function addExpense(amount: number, category: string, note: string,
   return data
 }
 
-export async function listExpenses() {
+export async function listExpenses(month?: string) {
   const userId = useAuthStore.getState().user?.id
   if (!userId) throw new Error('Not logged in')
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('personal_expenses')
     .select('*')
     .eq('user_id', userId)
     .order('spent_on', { ascending: false })
+  if (month) {
+    const [year, monthNumber] = month.split('-').map(Number)
+    const nextMonth = new Date(year, monthNumber, 1)
+    const end = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}-01`
+    query = query.gte('spent_on', `${month}-01`).lt('spent_on', end)
+  }
+  const { data, error } = await query
   if (error) throw error
   return data
 }
@@ -46,9 +54,9 @@ export async function deleteExpense(id: string) {
 }
 
 // Aggregated totals by category, for current month by default
-export async function getCategorySummary(month?: string) {
-  const expenses = await listExpenses()
-  const targetMonth = month || new Date().toISOString().slice(0, 7) // "YYYY-MM"
+export async function getCategorySummary(month?: string, providedExpenses?: Awaited<ReturnType<typeof listExpenses>>) {
+  const expenses = providedExpenses ?? await listExpenses()
+  const targetMonth = month || localDate(true)
 
   const filtered = expenses.filter((e) => e.spent_on.startsWith(targetMonth))
   const summary: Record<string, number> = {}

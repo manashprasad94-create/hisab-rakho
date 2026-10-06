@@ -1,3 +1,4 @@
+import Button from '../components/Button'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowDownLeft,
@@ -7,7 +8,6 @@ import {
   IndianRupee,
   Receipt,
   ShieldCheck,
-  Sparkles,
   Users,
   Wallet,
 } from 'lucide-react'
@@ -16,7 +16,7 @@ export default function LandingPage() {
   const navigate = useNavigate()
 
   return (
-    <div className="min-h-screen bg-bg-soft text-text overflow-hidden">
+    <div className="landing-page min-h-screen bg-bg-soft text-text">
 
       {/* =====================================================
           NAVBAR
@@ -31,11 +31,11 @@ export default function LandingPage() {
           >
             <div
               className="
-                w-11 h-11
+                brand-mark w-11 h-11
                 rounded-[15px]
                 bg-primary
                 flex items-center justify-center
-                shadow-[5px_5px_12px_rgba(15,118,110,0.18),-3px_-3px_8px_rgba(255,255,255,0.9)]
+
               "
             >
               <IndianRupee
@@ -50,14 +50,14 @@ export default function LandingPage() {
                 Hisab Kitab
               </p>
 
-              <p className="text-[10px] text-text-muted mt-1">
+              <p className="text-xs text-text-muted mt-1">
                 Money, made simple.
               </p>
             </div>
           </button>
 
 
-          <button
+          <Button variant="secondary"
             onClick={() => navigate('/login')}
             className="
               px-5 py-2.5
@@ -66,13 +66,13 @@ export default function LandingPage() {
               border border-border
               text-sm
               font-semibold
-              shadow-[3px_3px_8px_rgba(0,0,0,0.05)]
-              hover:-translate-y-0.5
+
+
               transition
             "
           >
             Login
-          </button>
+          </Button>
 
         </div>
       </header>
@@ -104,41 +104,16 @@ export default function LandingPage() {
 
             <div>
 
-              <div
-                className="
-                  inline-flex
-                  items-center
-                  gap-2
-                  px-3
-                  py-1.5
-                  rounded-full
-                  bg-white/80
-                  border border-white
-                  shadow-[3px_3px_8px_rgba(0,0,0,0.05)]
-                  text-xs
-                  font-medium
-                  text-text-muted
-                  mb-6
-                "
-              >
-                <Sparkles
-                  size={13}
-                  className="text-primary"
-                />
 
-                <span>
-                  Your money, finally organized.
-                </span>
-              </div>
 
 
               <h1
                 className="
-                  text-[3.3rem]
+                  text-[2.75rem]
                   sm:text-6xl
-                  lg:text-[4.7rem]
+                  lg:text-[4rem]
                   font-bold
-                  tracking-[-0.045em]
+                  tracking-[-0.03em]
                   leading-[0.98]
                 "
               >
@@ -148,6 +123,7 @@ export default function LandingPage() {
                   who owes whom.
                 </span>
               </h1>
+              <p className="text-sm text-text-muted mt-5">Your money, finally organized.</p>
 
 
               <p
@@ -178,7 +154,7 @@ export default function LandingPage() {
                 "
               >
 
-                <button
+                <Button
                   onClick={() => navigate('/signup')}
                   className="
                     group
@@ -192,8 +168,8 @@ export default function LandingPage() {
                     bg-primary
                     text-white
                     font-semibold
-                    shadow-[7px_7px_16px_rgba(15,118,110,0.20),-4px_-4px_10px_rgba(255,255,255,0.85)]
-                    hover:-translate-y-1
+
+
                     active:translate-y-0
                     transition
                   "
@@ -204,10 +180,10 @@ export default function LandingPage() {
                     size={18}
                     className="group-hover:translate-x-1 transition"
                   />
-                </button>
+                </Button>
 
 
-                <button
+                <Button variant="secondary"
                   onClick={() => navigate('/login')}
                   className="
                     px-7
@@ -216,13 +192,13 @@ export default function LandingPage() {
                     bg-white
                     border border-border
                     font-semibold
-                    shadow-[4px_4px_10px_rgba(0,0,0,0.05)]
-                    hover:-translate-y-1
+
+
                     transition
                   "
                 >
                   Login
-                </button>
+                </Button>
 
               </div>
 
@@ -274,22 +250,11 @@ export default function LandingPage() {
                 PREMIUM PHONE / DASHBOARD
                 ================================================= */}
 
-            <div className="relative flex justify-center lg:justify-end">
+            <div className="landing-preview-stage relative flex justify-center lg:justify-end">
 
               {/* Large soft glow */}
 
-              <div
-                className="
-                  absolute
-                  w-72
-                  h-72
-                  md:w-[420px]
-                  md:h-[420px]
-                  rounded-full
-                  bg-primary/10
-                  blur-3xl
-                "
-              />
+
 
 
               {/* Phone */}
@@ -297,22 +262,23 @@ export default function LandingPage() {
               <div
                 className="
                   relative
-                  w-[290px]
-                  sm:w-[320px]
-                  md:w-[350px]
+                  w-full max-w-[290px]
+                  sm:max-w-[320px]
+                  md:max-w-[350px]
                   rounded-[42px]
                   bg-bg-soft
                   border-[7px]
                   border-white
                   p-2
-                  shadow-[18px_20px_45px_rgba(0,0,0,0.15),-12px_-12px_30px_rgba(255,255,255,0.95)]
-                  rotate-[2deg]
-                  hover:rotate-0
+
+
+
                   transition-transform
                   duration-500
                 "
               >
 
+                <p className="sr-only">Illustrative example of Hisab Kitab with sample balances and friends.</p>
                 {/* Phone top */}
 
                 <div
@@ -341,7 +307,7 @@ export default function LandingPage() {
                     pt-9
                     pb-5
                     px-4
-                    min-h-[560px]
+                    min-h-[610px]
                   "
                 >
 
@@ -351,7 +317,7 @@ export default function LandingPage() {
 
                     <div>
 
-                      <p className="text-[10px] text-text-muted">
+                      <p className="text-xs text-text-muted">
                         Good morning
                       </p>
 
@@ -383,15 +349,15 @@ export default function LandingPage() {
 
                   <div
                     className="
-                      rounded-[25px]
+                      rounded-2xl
                       bg-primary
                       text-white
                       p-5
-                      shadow-[6px_7px_14px_rgba(15,118,110,0.20)]
+
                     "
                   >
 
-                    <p className="text-[10px] opacity-75">
+                    <p className="text-xs opacity-75">
                       Total you'll receive
                     </p>
 
@@ -399,7 +365,7 @@ export default function LandingPage() {
                       ₹1,250
                     </p>
 
-                    <div className="flex items-center gap-1.5 mt-3 text-[10px] opacity-80">
+                    <div className="flex items-center gap-1.5 mt-3 text-xs opacity-80">
                       <ArrowDownLeft size={12} />
                       From 3 friends
                     </div>
@@ -435,7 +401,7 @@ export default function LandingPage() {
                         Recent activity
                       </p>
 
-                      <span className="text-[9px] text-primary font-semibold">
+                      <span className="text-xs text-primary font-semibold">
                         See all
                       </span>
 
@@ -473,7 +439,7 @@ export default function LandingPage() {
 
                   <div
                     className="
-                      mt-4
+                      landing-preview-action mt-4
                       bg-white
                       rounded-2xl
                       p-3
@@ -496,7 +462,7 @@ export default function LandingPage() {
 
                   <div
                     className="
-                      absolute
+                      landing-preview-nav relative mt-3
                       bottom-3
                       left-3
                       right-3
@@ -505,7 +471,7 @@ export default function LandingPage() {
                       p-2
                       flex
                       justify-around
-                      shadow-[0_-2px_8px_rgba(0,0,0,0.04)]
+
                     "
                   >
 
@@ -535,16 +501,16 @@ export default function LandingPage() {
 
               <div
                 className="
-                  absolute
-                  left-[-8px]
-                  sm:left-[-25px]
+                  landing-preview-payment absolute
+                  left-0
+                  sm:left-0
                   bottom-12
                   bg-white
                   rounded-2xl
                   px-4
                   py-3
                   border border-white
-                  shadow-[8px_8px_18px_rgba(0,0,0,0.10)]
+
                   flex
                   items-center
                   gap-3
@@ -567,11 +533,11 @@ export default function LandingPage() {
 
                 <div>
 
-                  <p className="text-[11px] font-bold">
+                  <p className="text-xs font-bold">
                     Payment recorded
                   </p>
 
-                  <p className="text-[9px] text-text-muted">
+                  <p className="text-xs text-text-muted">
                     ₹200 received
                   </p>
 
@@ -584,16 +550,16 @@ export default function LandingPage() {
 
               <div
                 className="
-                  hidden sm:flex
+                  landing-preview-friends hidden sm:flex
                   absolute
-                  right-[-15px]
+                  right-0
                   top-16
                   bg-white
                   rounded-2xl
                   px-3
                   py-2.5
                   border border-white
-                  shadow-[7px_7px_16px_rgba(0,0,0,0.09)]
+
                   items-center
                   gap-2
                 "
@@ -609,11 +575,11 @@ export default function LandingPage() {
 
                 <div>
 
-                  <p className="text-[10px] font-bold">
+                  <p className="text-xs font-bold">
                     Your friends
                   </p>
 
-                  <p className="text-[8px] text-text-muted">
+                  <p className="text-xs text-text-muted">
                     All your hisab in one place
                   </p>
 
@@ -638,15 +604,7 @@ export default function LandingPage() {
 
             <div className="text-center max-w-xl mx-auto">
 
-              <p className="
-                text-xs
-                font-bold
-                uppercase
-                tracking-[0.18em]
-                text-primary
-              ">
-                Everything in one place
-              </p>
+
 
               <h2 className="
                 mt-3
@@ -660,6 +618,7 @@ export default function LandingPage() {
                   {' '}Your hisab.
                 </span>
               </h2>
+<p className="text-sm text-text-muted mt-4">Everything in one place</p>
 
               <p className="
                 mt-4
@@ -716,15 +675,7 @@ export default function LandingPage() {
 
             <div className="text-center mb-12">
 
-              <p className="
-                text-xs
-                font-bold
-                uppercase
-                tracking-[0.18em]
-                text-primary
-              ">
-                How it works
-              </p>
+
 
               <h2 className="
                 mt-3
@@ -737,6 +688,7 @@ export default function LandingPage() {
                   {' '}every day.
                 </span>
               </h2>
+<p className="text-sm text-text-muted mt-4">How it works</p>
 
             </div>
 
@@ -782,7 +734,7 @@ export default function LandingPage() {
             className="
               max-w-5xl
               mx-auto
-              rounded-[2rem]
+              rounded-2xl
               bg-white
               border border-border
               p-7
@@ -792,7 +744,7 @@ export default function LandingPage() {
               md:flex-row
               items-center
               gap-5
-              shadow-[6px_6px_15px_rgba(0,0,0,0.06)]
+
             "
           >
 
@@ -845,26 +797,26 @@ export default function LandingPage() {
               max-w-4xl
               mx-auto
               text-center
-              rounded-[2.5rem]
+              rounded-2xl
               bg-bg-soft
               border border-white
               p-10
               md:p-14
-              shadow-[10px_10px_25px_rgba(0,0,0,0.10),-8px_-8px_20px_rgba(255,255,255,0.9)]
+
             "
           >
 
             <div
               className="
                 mx-auto
-                w-12 h-12
+                brand-mark w-12 h-12
                 rounded-2xl
                 bg-primary
                 flex
                 items-center
                 justify-center
                 text-white
-                shadow-[5px_5px_12px_rgba(15,118,110,0.20)]
+
               "
             >
               <IndianRupee size={22} />
@@ -897,7 +849,7 @@ export default function LandingPage() {
             </p>
 
 
-            <button
+            <Button
               onClick={() => navigate('/signup')}
               className="
                 mt-7
@@ -910,14 +862,14 @@ export default function LandingPage() {
                 bg-primary
                 text-white
                 font-semibold
-                shadow-[6px_6px_15px_rgba(15,118,110,0.20)]
-                hover:-translate-y-1
+
+
                 transition
               "
             >
               Create free account
               <ArrowRight size={18} />
-            </button>
+            </Button>
 
           </div>
 
@@ -955,7 +907,7 @@ export default function LandingPage() {
 
             <div
               className="
-                w-8 h-8
+                brand-mark w-8 h-8
                 rounded-xl
                 bg-primary
                 flex
@@ -1031,7 +983,7 @@ function MiniBalance({
           />
         )}
 
-        <span className="text-[9px] text-text-muted">
+        <span className="text-xs text-text-muted">
           {label}
         </span>
 
@@ -1091,7 +1043,7 @@ function PhoneTransaction({
             flex
             items-center
             justify-center
-            text-[10px]
+            text-xs
             font-bold
             text-primary
           "
@@ -1101,11 +1053,11 @@ function PhoneTransaction({
 
         <div>
 
-          <p className="text-[10px] font-semibold">
+          <p className="text-xs font-semibold">
             {name}
           </p>
 
-          <p className="text-[8px] text-text-muted">
+          <p className="text-xs text-text-muted">
             {description}
           </p>
 
@@ -1116,7 +1068,7 @@ function PhoneTransaction({
 
       <p
         className={`
-          text-[11px]
+          text-xs
           font-bold
           ${receive ? 'text-receive' : 'text-owe'}
         `}
@@ -1177,7 +1129,7 @@ function AvatarLetter({
         flex
         items-center
         justify-center
-        text-[9px]
+        text-xs
         font-bold
         text-white
       "
@@ -1204,13 +1156,13 @@ function PremiumFeature({
   return (
     <div
       className="
-        group
+        feature-card group
         bg-bg-soft
-        rounded-[1.75rem]
+        rounded-2xl
         border border-white
         p-6
-        shadow-[7px_7px_16px_rgba(0,0,0,0.07),-5px_-5px_12px_rgba(255,255,255,0.9)]
-        hover:-translate-y-1.5
+
+
         transition
       "
     >
@@ -1274,10 +1226,10 @@ function Step({
       className="
         relative
         bg-white
-        rounded-[1.75rem]
+        rounded-2xl
         border border-border
         p-7
-        shadow-[5px_5px_13px_rgba(0,0,0,0.05)]
+
       "
     >
 
@@ -1285,7 +1237,7 @@ function Step({
         className="
           text-5xl
           font-black
-          text-primary/10
+          step-number text-text-muted
         "
       >
         {number}

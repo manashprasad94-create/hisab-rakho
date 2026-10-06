@@ -1,8 +1,14 @@
+import LoadingState from '../components/LoadingState'
+import StatusMessage from '../components/StatusMessage'
+import PageHeader from '../components/PageHeader'
+import { Input } from '../components/FormControls'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, PiggyBank, Plus } from 'lucide-react'
 import { listMyFunds, createFund } from '../lib/groupFund'
+import { errorMessage } from '../lib/errorMessage'
 import Card from '../components/card'
+import Badge from '../components/Badge'
 import Button from '../components/Button'
 import EmptyState from '../components/EmptyState'
 
@@ -13,11 +19,16 @@ export default function GroupFundsList() {
   const [showCreate, setShowCreate] = useState(false)
   const [newFundName, setNewFundName] = useState('')
   const [creating, setCreating] = useState(false)
+  const [error, setError] = useState('')
 
   const loadData = async () => {
-    const data = await listMyFunds()
-    setFunds(data)
-    setLoading(false)
+    try {
+      setFunds(await listMyFunds())
+    } catch (err) {
+      setError(errorMessage(err, 'Could not load funds'))
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -30,24 +41,25 @@ export default function GroupFundsList() {
     try {
       const fund = await createFund(newFundName)
       navigate(`/group-fund/${fund.id}`)
+    } catch (err) {
+      setError(errorMessage(err, 'Could not create fund'))
     } finally {
       setCreating(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-bg-soft p-4 pb-24">
+    <div className="app-page">
       <button onClick={() => navigate('/dashboard')} className="flex items-center gap-1 text-text-muted mb-3 text-sm">
         <ArrowLeft size={16} /> Back
       </button>
-      <h1 className="text-xl font-semibold mb-4 flex items-center gap-2">
-        <PiggyBank size={22} className="text-primary" /> Group Funds
-      </h1>
+      <PageHeader title={<> <PiggyBank size={22} className="text-primary" /> Group Funds </>} />
+      {error && <StatusMessage>{error}</StatusMessage>}
 
       {showCreate ? (
         <Card className="p-4 mb-4">
-          <label className="block text-sm mb-1 text-text-muted font-medium">Fund Name</label>
-          <input
+          <label htmlFor="groupfundslist-field-19" className="block text-sm mb-1 text-text-muted font-medium">Fund Name</label>
+          <Input id="groupfundslist-field-19"
             type="text"
             value={newFundName}
             onChange={(e) => setNewFundName(e.target.value)}
@@ -55,7 +67,7 @@ export default function GroupFundsList() {
             className="w-full mb-3 px-3 py-2 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
           />
           <div className="flex gap-2">
-            <Button onClick={handleCreate} disabled={creating} className="flex-1">
+            <Button onClick={handleCreate} loading={creating} className="flex-1">
               {creating ? 'Creating...' : 'Create'}
             </Button>
             <Button variant="secondary" onClick={() => setShowCreate(false)} className="flex-1">
@@ -70,20 +82,18 @@ export default function GroupFundsList() {
       )}
 
       {loading ? (
-        <div className="space-y-2">
-          {[1, 2].map((i) => <div key={i} className="h-16 bg-white/60 rounded-2xl animate-pulse border border-border" />)}
-        </div>
+        <LoadingState />
       ) : funds.length === 0 ? (
         <Card className="p-2">
           <EmptyState icon={PiggyBank} title="No funds yet" subtitle="Create one to start tracking a shared pool of money" />
         </Card>
       ) : (
-        <div className="space-y-2">
+        <div className="record-list">
           {funds.map((f) => (
             <Card key={f.fundId} onClick={() => navigate(`/group-fund/${f.fundId}`)} className="p-3 flex items-center justify-between">
               <div>
-                <p className="font-medium text-sm">{f.name}</p>
-                <p className="text-xs text-text-muted capitalize">{f.role}</p>
+                <p className="record-title">{f.name}</p>
+                <div className="record-status capitalize"><Badge>{f.role}</Badge></div>
               </div>
               <PiggyBank size={18} className="text-primary" />
             </Card>

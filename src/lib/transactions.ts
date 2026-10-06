@@ -12,34 +12,30 @@ export async function createGroupExpense(
   const userId = useAuthStore.getState().user?.id
   if (!userId) throw new Error('Not logged in')
   if (participantIds.length === 0) throw new Error('Select at least one participant')
+  if (new Set(participantIds).size !== participantIds.length || participantIds.includes(userId)) {
+    throw new Error('Choose each friend only once')
+  }
 
-  const splitAmount = Math.round((totalAmount / (participantIds.length + 1)) * 100) / 100 // +1 includes payer's own share
+  const totalCents = Math.round(totalAmount * 100)
+  if (!Number.isSafeInteger(totalCents) || Math.abs(totalAmount * 100 - totalCents) > 1e-8 ||
+      totalCents < participantIds.length + 1) {
+    throw new Error('Enter enough for at least ₹0.01 per person, with at most two decimal places')
+  }
+  const shareCents = Math.floor(totalCents / (participantIds.length + 1))
+  const extraCents = totalCents % (participantIds.length + 1)
 
-  const { data: groupExpense, error: groupError } = await supabase
-    .from('group_expenses')
-    .insert({ created_by: userId, total_amount: totalAmount, reason, category })
-    .select()
-    .single()
-  if (groupError) throw groupError
-
-  const rows = participantIds.map((friendId) => ({
-    created_by: userId,
-    payer_id: userId,
-    payee_id: friendId,
-    amount: splitAmount,
-    remaining_amount: splitAmount,
-    reason,
-    category,
-    status: 'pending' as const,
-    group_expense_id: groupExpense.id,
-  }))
-
-  const { data, error } = await supabase.from('friend_transactions').insert(rows).select()
+  const { error } = await supabase.rpc('create_group_expense_atomic', {
+    p_participant_ids: participantIds,
+    p_total_amount: totalAmount,
+    p_reason: reason,
+    p_category: category,
+  })
   if (error) throw error
 
   // notify each participant
   const payerName = useAuthStore.getState().profile?.full_name || 'Someone'
-  for (const friendId of participantIds) {
+  for (const [index, friendId] of participantIds.entries()) {
+    const splitAmount = ((shareCents + (index < extraCents ? 1 : 0)) / 100).toFixed(2)
     sendNotification(
       friendId,
       'Group expense added',
@@ -47,7 +43,6 @@ export async function createGroupExpense(
     )
   }
 
-  return data
 }
 // Check if the friend already has a pending_acceptance transaction claiming the reverse direction
 export async function checkReciprocalPending(friendId: string, amount: number) {
@@ -59,9 +54,10 @@ export async function checkReciprocalPending(friendId: string, amount: number) {
     .select('*')
     .eq('status', 'pending_acceptance')
     .eq('created_by', friendId)
+    .eq('payer_id', friendId)
     .eq('payee_id', userId)
     .eq('amount', amount)
-  if (error) return null
+  if (error) throw error
 
   return data && data.length > 0 ? data[0] : null
 }
@@ -73,12 +69,22 @@ export async function createBulkTransactions(
   reason: string,
   category: string
 ) {
-  const results = []
-  for (const friendId of friendIds) {
-    const result = await createTransaction(friendId, amount, reason, category, 'i_paid')
-    results.push(result)
+  if (!friendIds.length || new Set(friendIds).size !== friendIds.length) {
+    throw new Error('Select each friend only once')
   }
-  return results
+  const { error } = await supabase.rpc('create_bulk_transactions_atomic', {
+    p_friend_ids: friendIds,
+    p_amount: amount,
+    p_reason: reason,
+    p_category: category,
+  })
+  if (error) throw error
+
+  const creatorName = useAuthStore.getState().profile?.full_name || 'Someone'
+  for (const friendId of friendIds) {
+    sendNotification(friendId, 'New transaction request',
+      `${creatorName} wants to record ₹${amount} — ${reason || 'no reason'}. Please review.`)
+  }
 }
 // 'they_paid' means friend paid for current user (current user owes friend).
 export async function createTransaction(
@@ -91,26 +97,16 @@ export async function createTransaction(
   const userId = useAuthStore.getState().user?.id
   if (!userId) throw new Error('Not logged in')
 
-  const payer_id = direction === 'i_paid' ? userId : friendId
-  const payee_id = direction === 'i_paid' ? friendId : userId
-
-  const { data, error } = await supabase
-    .from('friend_transactions')
-    .insert({
-      created_by: userId,
-      payer_id,
-      payee_id,
-      amount,
-      remaining_amount: amount,
-      reason,
-      category,
-      status: 'pending_acceptance',
-    })
-    .select()
-    .single()
+  const { data, error } = await supabase.rpc('create_friend_transaction', {
+    p_friend_id: friendId,
+    p_amount: amount,
+    p_reason: reason,
+    p_category: category,
+    p_direction: direction,
+  })
   if (error) throw error
 
-  const recipientId = direction === 'i_paid' ? friendId : userId
+  const recipientId = friendId
   const creatorName = useAuthStore.getState().profile?.full_name || 'Someone'
   sendNotification(
     recipientId,
@@ -129,13 +125,12 @@ export async function editPendingTransaction(
   reason: string,
   category: string
 ) {
-  const { data, error } = await supabase
-    .from('friend_transactions')
-    .update({ amount, remaining_amount: amount, reason, category, updated_at: new Date().toISOString() })
-    .eq('id', transactionId)
-    .eq('status', 'pending_acceptance')
-    .select()
-    .single()
+  const { data, error } = await supabase.rpc('edit_pending_friend_transaction', {
+    p_transaction_id: transactionId,
+    p_amount: amount,
+    p_reason: reason,
+    p_category: category,
+  })
   if (error) throw error
   return data
 }
@@ -143,12 +138,9 @@ export async function editPendingTransaction(
 // Accept a pending_acceptance transaction — only the non-creator party should call this
 export async function acceptTransaction(transactionId: string) {
   const userId = useAuthStore.getState().user?.id
-  const { data, error } = await supabase
-    .from('friend_transactions')
-    .update({ status: 'pending', updated_at: new Date().toISOString() })
-    .eq('id', transactionId)
-    .select()
-    .single()
+  const { data, error } = await supabase.rpc('accept_friend_transaction', {
+    p_transaction_id: transactionId,
+  })
   if (error) throw error
 
   if (data && data.created_by !== userId) {
@@ -166,18 +158,10 @@ export async function acceptTransaction(transactionId: string) {
 
 // Reject a pending_acceptance transaction — removes it entirely
 export async function rejectTransaction(transactionId: string) {
-  const { data, error } = await supabase
-    .from('friend_transactions')
-    .select('created_by, amount')
-    .eq('id', transactionId)
-    .single()
+  const { data, error } = await supabase.rpc('reject_friend_transaction', {
+    p_transaction_id: transactionId,
+  })
   if (error) throw error
-
-  const { error: deleteError } = await supabase
-    .from('friend_transactions')
-    .delete()
-    .eq('id', transactionId)
-  if (deleteError) throw deleteError
 
     if (data) {
     const userId = useAuthStore.getState().user?.id
@@ -187,7 +171,7 @@ export async function rejectTransaction(transactionId: string) {
 
 // Reject a claimed payment
 // List all transactions involving current user, with friend profile joined
-export async function listTransactionsWithFriend(friendId: string) {
+export async function listTransactionsWithFriend(friendId: string, offset = 0, limit = 50) {
   const userId = useAuthStore.getState().user?.id
   if (!userId) throw new Error('Not logged in')
 
@@ -198,22 +182,21 @@ export async function listTransactionsWithFriend(friendId: string) {
       `and(payer_id.eq.${userId},payee_id.eq.${friendId}),and(payer_id.eq.${friendId},payee_id.eq.${userId})`
     )
     .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1)
   if (error) throw error
   return data
 }
 
-// List ALL friend transactions for current user (for dashboard aggregation)
-export async function listAllTransactions() {
-  const userId = useAuthStore.getState().user?.id
-  if (!userId) throw new Error('Not logged in')
-
-  const { data, error } = await supabase
-    .from('friend_transactions')
-    .select('*')
-    .or(`payer_id.eq.${userId},payee_id.eq.${userId}`)
-    .order('created_at', { ascending: false })
+export async function getFriendBalanceTotals() {
+  const { data, error } = await supabase.rpc('get_friend_balance_totals')
   if (error) throw error
-  return data
+  return (data as { to_receive: number; to_pay: number }[] | null)?.[0] || { to_receive: 0, to_pay: 0 }
+}
+
+export async function listFriendBalances() {
+  const { data, error } = await supabase.rpc('list_friend_balances')
+  if (error) throw error
+  return (data as { friend_id: string; full_name: string | null; amount: number; direction: 'receive' | 'pay' }[] | null) || []
 }
 
 // Step 1 of settlement: payee marks that they paid some amount (creates payment_record, unconfirmed)
@@ -221,21 +204,16 @@ export async function markAsPaid(transactionId: string, amount: number) {
   const userId = useAuthStore.getState().user?.id
   if (!userId) throw new Error('Not logged in')
 
-  const { data, error } = await supabase
-    .from('payment_records')
-    .insert({
-      transaction_id: transactionId,
-      paid_by: userId,
-      amount,
-    })
-    .select()
-    .single()
+  const { data, error } = await supabase.rpc('claim_friend_payment', {
+    p_transaction_id: transactionId,
+    p_amount: amount,
+  })
   if (error) throw error
 
-  // notify the payee (person who is owed) that payer claims they paid
+  // Notify the person owed, who must confirm receipt.
   const { data: txn } = await supabase
     .from('friend_transactions')
-    .select('payee_id')
+    .select('payer_id')
     .eq('id', transactionId)
     .single()
 
@@ -243,7 +221,7 @@ export async function markAsPaid(transactionId: string, amount: number) {
     const payerName = useAuthStore.getState().profile?.full_name || 'Someone'
     const userId = useAuthStore.getState().user?.id
     sendNotification(
-      txn.payee_id,
+      txn.payer_id,
       'Payment claimed',
       `${payerName} marked ₹${amount} as paid — please confirm`,
       `/friends/${userId}`
@@ -254,30 +232,11 @@ export async function markAsPaid(transactionId: string, amount: number) {
 }
 
 // Step 2 of settlement: payer confirms receipt -> reduces remaining_amount, updates status
-export async function confirmPayment(paymentRecordId: string, transactionId: string, amount: number) {
-  // confirm the payment record
-  const { error: confirmError } = await supabase
-    .from('payment_records')
-    .update({ confirmed: true, confirmed_at: new Date().toISOString() })
-    .eq('id', paymentRecordId)
-  if (confirmError) throw confirmError
-
-  // fetch current transaction to compute new remaining amount
-  const { data: txn, error: fetchError } = await supabase
-    .from('friend_transactions')
-    .select('remaining_amount')
-    .eq('id', transactionId)
-    .single()
-  if (fetchError) throw fetchError
-
-  const newRemaining = Math.max(0, Number(txn.remaining_amount) - amount)
-  const newStatus = newRemaining === 0 ? 'settled' : 'partially_paid'
-
-  const { error: updateError } = await supabase
-    .from('friend_transactions')
-    .update({ remaining_amount: newRemaining, status: newStatus, updated_at: new Date().toISOString() })
-    .eq('id', transactionId)
-  if (updateError) throw updateError
+export async function confirmPayment(paymentRecordId: string) {
+  const { data: confirmedAmount, error } = await supabase.rpc('confirm_friend_payment', {
+    p_payment_record_id: paymentRecordId,
+  })
+  if (error) throw error
 
   // notify the payer that their payment was confirmed
   const { data: paymentRecord } = await supabase
@@ -291,7 +250,7 @@ export async function confirmPayment(paymentRecordId: string, transactionId: str
     sendNotification(
       paymentRecord.paid_by,
       'Payment confirmed',
-      `Your payment of ₹${amount} was confirmed`,
+      `Your payment of ₹${confirmedAmount} was confirmed`,
       `/friends/${userId}`
     )
   }
@@ -299,12 +258,9 @@ export async function confirmPayment(paymentRecordId: string, transactionId: str
 
 // Reject a claimed payment
 export async function rejectPayment(paymentRecordId: string) {
-  const { data: record, error } = await supabase
-    .from('payment_records')
-    .update({ rejected: true, rejected_at: new Date().toISOString() })
-    .eq('id', paymentRecordId)
-    .select()
-    .single()
+  const { data: record, error } = await supabase.rpc('reject_friend_payment', {
+    p_payment_record_id: paymentRecordId,
+  })
   if (error) throw error
 
   if (record) {
@@ -317,11 +273,12 @@ export async function rejectPayment(paymentRecordId: string) {
 }
 
 // Get unconfirmed payment records for a transaction (pending confirmation)
-export async function getPendingPaymentRecords(transactionId: string) {
+export async function getPendingPaymentRecords(transactionIds: string[]) {
+  if (transactionIds.length === 0) return []
   const { data, error } = await supabase
     .from('payment_records')
     .select('*')
-    .eq('transaction_id', transactionId)
+    .in('transaction_id', transactionIds)
     .eq('confirmed', false)
     .eq('rejected', false)
   if (error) throw error

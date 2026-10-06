@@ -18,22 +18,11 @@ export async function listMyFunds() {
 }
 
 export async function createFund(name: string) {
-  const userId = useAuthStore.getState().user?.id
-  if (!userId) throw new Error('Not logged in')
-
-  const { data: fund, error: fundError } = await supabase
-    .from('group_funds')
-    .insert({ name, created_by: userId })
-    .select()
-    .single()
-  if (fundError) throw fundError
-
-  const { error: memberError } = await supabase
-    .from('group_fund_members')
-    .insert({ fund_id: fund.id, user_id: userId, role: 'owner' })
-  if (memberError) throw memberError
-
-  return fund
+  const { data, error } = await supabase.rpc('create_group_fund_atomic', {
+    p_name: name.trim(),
+  })
+  if (error) throw error
+  return { id: data }
 }
 
 export async function getMyRoleInFund(fundId: string): Promise<'owner' | 'admin' | 'member' | null> {
@@ -46,7 +35,8 @@ export async function getMyRoleInFund(fundId: string): Promise<'owner' | 'admin'
     .eq('fund_id', fundId)
     .eq('user_id', userId)
     .maybeSingle()
-  if (error || !data) return null
+  if (error) throw error
+  if (!data) return null
   return data.role
 }
 
@@ -60,34 +50,26 @@ export async function listFundMembers(fundId: string) {
 }
 
 export async function addFundMember(fundId: string, email: string, role: 'admin' | 'member') {
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('email', email.trim().toLowerCase())
-    .maybeSingle()
-  if (profileError) throw profileError
-  if (!profile) throw new Error('No registered user found with this email')
-
-  const { data, error } = await supabase
-    .from('group_fund_members')
-    .insert({ fund_id: fundId, user_id: profile.id, role })
-    .select()
-    .single()
+  const { data, error } = await supabase.rpc('add_group_fund_member', {
+    p_fund_id: fundId,
+    p_email: email.trim().toLowerCase(),
+    p_role: role,
+  })
   if (error) throw error
   return data
 }
 
-export async function listFundTransactions(fundId: string) {
+export async function listFundTransactions(fundId: string, offset = 0, limit = 50) {
   const { data, error } = await supabase
     .from('group_fund_transactions')
     .select('*, profiles:added_by(full_name)')
     .eq('fund_id', fundId)
     .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1)
   if (error) throw error
   return data
 }
 
-// Holder balances now come from a directly-editable table (backend-managed top-ups)
 export async function getHolderBalances(fundId: string) {
   const { data, error } = await supabase
     .from('group_fund_balances')
@@ -96,31 +78,11 @@ export async function getHolderBalances(fundId: string) {
   if (error) throw error
   return (data || []).map((b: any) => ({
     userId: b.user_id,
-    name: b.profiles?.full_name,
+    name: (Array.isArray(b.profiles) ? b.profiles[0] : b.profiles)?.full_name || 'Holder',
     cash: Number(b.cash_balance),
     online: Number(b.online_balance),
     total: Number(b.cash_balance) + Number(b.online_balance),
   }))
-}
-
-async function deductFromBalance(fundId: string, userId: string, amount: number, mode: 'cash' | 'online') {
-  const { data: current, error: fetchError } = await supabase
-    .from('group_fund_balances')
-    .select('cash_balance, online_balance')
-    .eq('fund_id', fundId)
-    .eq('user_id', userId)
-    .single()
-  if (fetchError) throw fetchError
-
-  const field = mode === 'cash' ? 'cash_balance' : 'online_balance'
-  const newValue = Number(current[field]) - amount
-
-  const { error: updateError } = await supabase
-    .from('group_fund_balances')
-    .update({ [field]: newValue, updated_at: new Date().toISOString() })
-    .eq('fund_id', fundId)
-    .eq('user_id', userId)
-  if (updateError) throw updateError
 }
 
 export async function addFundExpense(
@@ -130,26 +92,36 @@ export async function addFundExpense(
   category: string,
   paymentMode: 'cash' | 'online'
 ) {
-  const userId = useAuthStore.getState().user?.id
-  if (!userId) throw new Error('Not logged in')
-
-  const { data, error } = await supabase
-    .from('group_fund_transactions')
-    .insert({
-      fund_id: fundId,
-      type: 'expense',
-      amount,
-      reason,
-      category,
-      added_by: userId,
-      holder_id: userId,
-      payment_mode: paymentMode,
-    })
-    .select()
-    .single()
+  const { data, error } = await supabase.rpc('spend_group_fund', {
+    p_fund_id: fundId,
+    p_amount: amount,
+    p_reason: reason.trim(),
+    p_category: category,
+    p_payment_mode: paymentMode,
+  })
   if (error) throw error
-
-  await deductFromBalance(fundId, userId, amount, paymentMode)
-
   return data
+}
+
+export async function depositToFundHolder(
+  fundId: string,
+  holderId: string,
+  amount: number,
+  paymentMode: 'cash' | 'online',
+  reason: string,
+  depositDate: string
+) {
+  if (!Number.isFinite(amount) || amount <= 0 || !Number.isSafeInteger(Math.round(amount * 100)) || Math.abs(amount * 100 - Math.round(amount * 100)) > 1e-8) {
+    throw new Error('Enter an amount greater than zero with at most two decimal places')
+  }
+
+  const { error } = await supabase.rpc('deposit_group_fund', {
+    p_fund_id: fundId,
+    p_holder_id: holderId,
+    p_amount: amount,
+    p_payment_mode: paymentMode,
+    p_reason: reason.trim(),
+    p_deposit_date: depositDate,
+  })
+  if (error) throw error
 }

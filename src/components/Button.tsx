@@ -1,20 +1,16 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import { LoaderCircle } from 'lucide-react'
 
 type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost'
   children: ReactNode
+  loading?: boolean
 }
 
-export default function Button({ variant = 'primary', children, className = '', ...props }: Props) {
-  const base = 'py-2.5 px-4 rounded-xl font-medium transition disabled:opacity-50 disabled:cursor-not-allowed'
-  const variants = {
-    primary: 'bg-primary text-white hover:bg-primary-dark shadow-sm',
-    secondary: 'bg-white border border-primary text-primary hover:bg-primary/5',
-    danger: 'bg-white border border-owe text-owe hover:bg-owe/5',
-    ghost: 'text-text-muted hover:text-text',
-  }
+export default function Button({ variant = 'primary', children, className = '', loading = false, disabled, ...props }: Props) {
   return (
-    <button className={`${base} ${variants[variant]} ${className}`} {...props}>
+    <button className={`hk-button hk-button-${variant} ${className}`} disabled={disabled || loading} aria-busy={loading || undefined} {...props}>
+      {loading && <LoaderCircle size={17} className="animate-spin" aria-hidden="true" />}
       {children}
     </button>
   )

@@ -1,7 +1,11 @@
+import StatusMessage from '../components/StatusMessage'
+import PageHeader from '../components/PageHeader'
+import { Input } from '../components/FormControls'
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, UtensilsCrossed, ShoppingBag, Plane, Film,GraduationCap, MoreHorizontal } from 'lucide-react'
 import { addExpense } from '../lib/expenses'
+import { localDate } from '../lib/localDate'
 import Card from '../components/card'
 import Button from '../components/Button'
 
@@ -22,7 +26,7 @@ export default function AddExpense() {
   const [amount, setAmount] = useState(searchParams.get('amount') || '')
   const [category, setCategory] = useState('food')
   const [note, setNote] = useState(searchParams.get('note') || '')
-  const [spentOn, setSpentOn] = useState(new Date().toISOString().slice(0, 10))
+  const [spentOn, setSpentOn] = useState(() => localDate())
   const [paymentMode, setPaymentMode] = useState<'cash' | 'online'>('online')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -45,20 +49,20 @@ export default function AddExpense() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-soft p-4 pb-24">
+    <div className="app-page">
       <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-text-muted mb-3 text-sm">
         <ArrowLeft size={16} /> Back
       </button>
-      <h1 className="text-xl font-semibold mb-4">Add Expense</h1>
+      <PageHeader title={<> Add Expense </>} />
 
       <form onSubmit={handleSubmit}>
         <Card className="p-4 mb-4">
-          {error && <p className="text-owe text-sm mb-3">{error}</p>}
+          {error && <StatusMessage>{error}</StatusMessage>}
 
-          <label className="block text-sm mb-1 text-text-muted font-medium">Amount</label>
+          <label htmlFor="addexpense-field-1" className="block text-sm mb-1 text-text-muted font-medium">Amount</label>
           <div className="relative mb-4">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">₹</span>
-            <input
+            <Input id="addexpense-field-1"
               type="number"
               min="1"
               step="0.01"
@@ -72,7 +76,7 @@ export default function AddExpense() {
           <label className="block text-sm mb-2 text-text-muted font-medium">Category</label>
           <div className="grid grid-cols-4 gap-2 mb-4">
             {CATEGORIES.map(({ id, label, icon: Icon }) => (
-              <button
+              <button aria-pressed={category === id}
                 key={id}
                 type="button"
                 onClick={() => setCategory(id)}
@@ -81,14 +85,14 @@ export default function AddExpense() {
                 }`}
               >
                 <Icon size={18} />
-                <span className="text-[10px] font-medium">{label}</span>
+                <span className="text-xs font-medium">{label}</span>
               </button>
             ))}
           </div>
 
           <label className="block text-sm mb-2 text-text-muted font-medium">Payment Mode</label>
           <div className="flex gap-2 mb-4">
-            <button
+            <button aria-pressed={paymentMode === 'cash'}
               type="button"
               onClick={() => setPaymentMode('cash')}
               className={`flex-1 py-2 rounded-xl font-medium border text-sm transition ${
@@ -97,7 +101,7 @@ export default function AddExpense() {
             >
               Cash
             </button>
-            <button
+            <button aria-pressed={paymentMode === 'online'}
               type="button"
               onClick={() => setPaymentMode('online')}
               className={`flex-1 py-2 rounded-xl font-medium border text-sm transition ${
@@ -107,15 +111,16 @@ export default function AddExpense() {
               Online
             </button>
           </div>
-          <input
+          <label htmlFor="expense-date" className="block text-sm mb-2 font-medium">Date</label>
+          <Input id="expense-date"
             type="date"
             value={spentOn}
             onChange={(e) => setSpentOn(e.target.value)}
             className="w-full mb-4 px-3 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
           />
 
-          <label className="block text-sm mb-1 text-text-muted font-medium">Reason</label>
-          <input
+          <label htmlFor="addexpense-field-3" className="block text-sm mb-1 text-text-muted font-medium">Reason</label>
+          <Input id="addexpense-field-3"
             type="text"
             value={note}
             onChange={(e) => setNote(e.target.value)}
@@ -124,7 +129,7 @@ export default function AddExpense() {
           />
         </Card>
 
-        <Button type="submit" disabled={loading} className="w-full">
+        <Button type="submit" loading={loading} className="w-full">
           {loading ? 'Saving...' : 'Save Expense'}
         </Button>
       </form>

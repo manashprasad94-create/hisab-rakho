@@ -1,7 +1,11 @@
+import StatusMessage from '../components/StatusMessage'
+import PageHeader from '../components/PageHeader'
+import { Input } from '../components/FormControls'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, UtensilsCrossed, ShoppingBag, MoreHorizontal, Zap, Wrench } from 'lucide-react'
 import { addFundExpense } from '../lib/groupFund'
+import { errorMessage } from '../lib/errorMessage'
 import Card from '../components/card'
 import Button from '../components/Button'
 
@@ -35,27 +39,27 @@ export default function AddFundExpense() {
       await addFundExpense(fundId, Number(amount), reason, category, paymentMode)
       navigate(`/group-fund/${fundId}`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add expense')
+      setError(errorMessage(err, 'Failed to add expense'))
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-bg-soft p-4 pb-24">
+    <div className="app-page">
       <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-text-muted mb-3 text-sm">
         <ArrowLeft size={16} /> Back
       </button>
-      <h1 className="text-xl font-semibold mb-4">Add Fund Expense</h1>
+      <PageHeader title={<> Add Fund Expense </>} />
 
       <form onSubmit={handleSubmit}>
         <Card className="p-4 mb-4">
-          {error && <p className="text-owe text-sm mb-3">{error}</p>}
+          {error && <StatusMessage>{error}</StatusMessage>}
 
-          <label className="block text-sm mb-1 text-text-muted font-medium">Amount</label>
+          <label htmlFor="addfundexpense-field-4" className="block text-sm mb-1 text-text-muted font-medium">Amount</label>
           <div className="relative mb-4">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">₹</span>
-            <input
+            <Input id="addfundexpense-field-4"
               type="number"
               min="1"
               step="0.01"
@@ -69,7 +73,7 @@ export default function AddFundExpense() {
           <label className="block text-sm mb-2 text-text-muted font-medium">Category</label>
           <div className="grid grid-cols-5 gap-2 mb-4">
             {CATEGORIES.map(({ id, label, icon: Icon }) => (
-              <button
+              <button aria-pressed={category === id}
                 key={id}
                 type="button"
                 onClick={() => setCategory(id)}
@@ -78,13 +82,13 @@ export default function AddFundExpense() {
                 }`}
               >
                 <Icon size={16} />
-                <span className="text-[9px] font-medium">{label}</span>
+                <span className="text-xs font-medium">{label}</span>
               </button>
             ))}
           </div>
                     <label className="block text-sm mb-2 text-text-muted font-medium">Paid From</label>
           <div className="flex gap-2 mb-4">
-            <button
+            <button aria-pressed={paymentMode === 'cash'}
               type="button"
               onClick={() => setPaymentMode('cash')}
               className={`flex-1 py-2 rounded-xl font-medium border text-sm transition ${
@@ -93,7 +97,7 @@ export default function AddFundExpense() {
             >
               My Cash
             </button>
-            <button
+            <button aria-pressed={paymentMode === 'online'}
               type="button"
               onClick={() => setPaymentMode('online')}
               className={`flex-1 py-2 rounded-xl font-medium border text-sm transition ${
@@ -104,8 +108,8 @@ export default function AddFundExpense() {
             </button>
           </div>
 
-          <label className="block text-sm mb-1 text-text-muted font-medium">Spent On</label>
-          <input
+          <label htmlFor="addfundexpense-field-5" className="block text-sm mb-1 text-text-muted font-medium">Spent On</label>
+          <Input id="addfundexpense-field-5"
             type="text"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
@@ -114,7 +118,7 @@ export default function AddFundExpense() {
           />
         </Card>
 
-        <Button type="submit" disabled={loading} className="w-full">
+        <Button type="submit" loading={loading} className="w-full">
           {loading ? 'Saving...' : 'Add Expense'}
         </Button>
       </form>

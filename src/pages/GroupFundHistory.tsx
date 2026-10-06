@@ -1,3 +1,6 @@
+import LoadingState from '../components/LoadingState'
+import StatusMessage from '../components/StatusMessage'
+import PageHeader from '../components/PageHeader'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, ArrowDownLeft, ArrowUpRight, Receipt, Download } from 'lucide-react'
@@ -12,14 +15,40 @@ export default function GroupFundHistory() {
   const navigate = useNavigate()
   const [txns, setTxns] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     if (!fundId) return
+    let active = true
+    setLoading(true)
+    setError('')
     listFundTransactions(fundId).then((data) => {
+      if (!active) return
       setTxns(data)
-      setLoading(false)
+      setHasMore(data.length === 50)
+    }).catch((err) => {
+      if (active) setError(err instanceof Error ? err.message : 'Could not load fund history')
+    }).finally(() => {
+      if (active) setLoading(false)
     })
+    return () => { active = false }
   }, [fundId])
+
+  const loadMore = async () => {
+    if (!fundId || loadingMore) return
+    setLoadingMore(true)
+    try {
+      const data = await listFundTransactions(fundId, txns.length)
+      setTxns((current) => [...current, ...data])
+      setHasMore(data.length === 50)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not load more history')
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   const groupedByDate = txns.reduce((groups: Record<string, any[]>, t) => {
     const dateKey = new Date(t.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -29,13 +58,13 @@ export default function GroupFundHistory() {
   }, {})
 
   return (
-    <div className="min-h-screen bg-bg-soft p-4 pb-24">
+    <div className="app-page">
       <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-text-muted mb-3 text-sm">
         <ArrowLeft size={16} /> Back
       </button>
 
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-semibold">Fund History</h1>
+        <PageHeader title={<> Fund History </>} />
         {txns.length > 0 && (
           <Button
             variant="secondary"
@@ -49,20 +78,22 @@ export default function GroupFundHistory() {
                   reason: t.reason,
                   category: t.category || '',
                   added_by: t.profiles?.full_name || '',
+                  holder_id: t.holder_id || '',
+                  payment_mode: t.payment_mode || '',
                 }))
               )
             }
             className="text-xs py-1.5 px-3 flex items-center gap-1.5"
           >
-            <Download size={14} /> Export
+            <Download size={14} /> Export loaded
           </Button>
         )}
       </div>
 
+      {error && <StatusMessage>{error}</StatusMessage>}
+
       {loading ? (
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => <div key={i} className="h-16 bg-white/60 rounded-2xl animate-pulse border border-border" />)}
-        </div>
+        <LoadingState />
       ) : txns.length === 0 ? (
         <Card className="p-2">
           <EmptyState icon={Receipt} title="No activity yet" subtitle="Deposits and expenses will show up here" />
@@ -72,7 +103,7 @@ export default function GroupFundHistory() {
           {Object.entries(groupedByDate).map(([dateLabel, items]) => (
             <div key={dateLabel}>
               <p className="text-xs font-semibold text-text-muted mb-2">{dateLabel}</p>
-              <div className="space-y-2">
+              <div className="record-list">
                 {items.map((t) => (
                   <Card key={t.id} className="p-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -82,9 +113,9 @@ export default function GroupFundHistory() {
                         <ArrowUpRight size={16} className="text-owe shrink-0" />
                       )}
                       <div>
-                        <p className="font-medium text-sm">{t.reason || (t.type === 'deposit' ? 'Fund deposit' : 'Expense')}</p>
-                        <p className="text-xs text-text-muted">
-                          {t.type === 'expense' && t.category ? `${t.category} · ` : ''}by {t.profiles?.full_name || 'Someone'}
+                        <p className="record-title">{t.reason || (t.type === 'deposit' ? 'Fund deposit' : 'Expense')}</p>
+                        <p className="record-meta text-text-muted">
+                          {t.type === 'expense' && t.category ? `${t.category} · ` : ''}{t.payment_mode ? `${t.payment_mode} · ` : ''}by {t.profiles?.full_name || 'Someone'}
                         </p>
                       </div>
                     </div>
@@ -96,6 +127,11 @@ export default function GroupFundHistory() {
               </div>
             </div>
           ))}
+          {hasMore && (
+            <Button variant="secondary" loading={loadingMore} onClick={loadMore} className="w-full">
+              {loadingMore ? 'Loading...' : 'Load more'}
+            </Button>
+          )}
         </div>
       )}
     </div>

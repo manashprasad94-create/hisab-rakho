@@ -12,24 +12,32 @@ export default function ShareTarget() {
       const shared = searchParams.get('shared')
 
       if (shared === '1') {
+        const id = searchParams.get('id') || ''
+        if (!/^[0-9a-f-]{36}$/i.test(id)) {
+          navigate('/add-expense', { replace: true })
+          return
+        }
+        const receiptKey = `/shared-receipt/${id}`
+        const cache = await caches.open('share-target-cache')
         try {
-          const cache = await caches.open('share-target-cache')
-          const response = await cache.match('/shared-receipt')
+          const response = await cache.match(receiptKey)
           if (!response) {
             navigate('/add-expense', { replace: true })
             return
           }
 
           const blob = await response.blob()
+          if (blob.size > 5_000_000 || !['image/jpeg', 'image/png', 'image/webp'].includes(blob.type)) {
+            navigate('/add-expense', { replace: true })
+            return
+          }
           const base64 = await blobToBase64(blob)
 
           setStatus('Reading amount from screenshot...')
 
           const { data, error } = await supabase.functions.invoke('ocr-receipt', {
-            body: { imageBase64: base64 },
+            body: { imageBase64: base64, mimeType: blob.type },
           })
-
-          await cache.delete('/shared-receipt')
 
           if (error || !data) {
             navigate('/add-expense', { replace: true })
@@ -43,6 +51,8 @@ export default function ShareTarget() {
           navigate(`/add-expense?${params.toString()}`, { replace: true })
         } catch {
           navigate('/add-expense', { replace: true })
+        } finally {
+          await cache.delete(receiptKey)
         }
         return
       }
@@ -65,8 +75,8 @@ export default function ShareTarget() {
   }, [searchParams, navigate])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg-soft">
-      <p className="text-text-muted">{status}</p>
+    <div className="app-page">
+      <p role="status" className="text-text-muted">{status}</p>
     </div>
   )
 }

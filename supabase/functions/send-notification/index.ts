@@ -1,12 +1,12 @@
 // Supabase Edge Function: send-notification (FCM V1 API)
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { create as createJWT, getNumericDate } from 'https://deno.land/x/djwt@v2.8/mod.ts'
+import { adminClient, authenticatedUser, claimQuota, corsHeaders, json } from '../_shared/auth.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+const allowedTitles = new Set([
+  'Group expense added', 'New transaction request', 'Transaction accepted',
+  'Transaction rejected', 'Payment claimed', 'Payment confirmed', 'Payment rejected',
+])
 
 async function getAccessToken(clientEmail: string, privateKey: string) {
   const keyData = privateKey.replace(/\\n/g, '\n')
@@ -56,13 +56,41 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
+  const user = await authenticatedUser(req)
+  if (!user) return json({ error: 'Sign in required' }, 401)
+
   try {
     const { recipientId, title, body, actionUrl } = await req.json()
+    if (typeof recipientId !== 'string' || !/^[0-9a-f-]{36}$/i.test(recipientId) ||
+        typeof title !== 'string' || !allowedTitles.has(title) ||
+        typeof body !== 'string' || body.length < 1 || body.length > 300 ||
+        (actionUrl != null && (typeof actionUrl !== 'string' || !/^\/friends\/[0-9a-f-]{36}$/i.test(actionUrl)))) {
+      return json({ error: 'Invalid notification' }, 400)
+    }
 
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    const supabaseAdmin = adminClient()
+    if (recipientId !== user.id) {
+      const { data: friendship, error: friendshipError } = await supabaseAdmin
+        .from('friendships')
+        .select('id')
+        .or(`and(user_a.eq.${user.id},user_b.eq.${recipientId}),and(user_a.eq.${recipientId},user_b.eq.${user.id})`)
+        .eq('status', 'accepted')
+        .limit(1)
+      if (friendshipError) throw friendshipError
+      if (!friendship?.length) {
+        const { data: transaction, error: transactionError } = await supabaseAdmin
+          .from('friend_transactions')
+          .select('id')
+          .or(`and(payer_id.eq.${user.id},payee_id.eq.${recipientId}),and(payer_id.eq.${recipientId},payee_id.eq.${user.id})`)
+          .limit(1)
+        if (transactionError) throw transactionError
+        if (!transaction?.length) return json({ error: 'Recipient is not related to this account' }, 403)
+      }
+    }
+    if (!(await claimQuota(user.id, 'notification', 60))) {
+      return json({ error: 'Notification limit reached. Try later.' }, 429)
+    }
 
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
@@ -70,11 +98,19 @@ serve(async (req) => {
       .eq('id', recipientId)
       .single()
 
-    if (profileError || !profile?.fcm_token) {
-      return new Response(JSON.stringify({ skipped: 'no fcm token' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
+    if (profileError) throw profileError
+
+    const { error: insertError } = await supabaseAdmin.from('notifications').insert({
+      user_id: recipientId,
+      title,
+      body,
+      type: 'transaction',
+      read: false,
+      action_url: actionUrl || null,
+    })
+    if (insertError) throw insertError
+
+    if (!profile?.fcm_token) return json({ success: true, push: false })
 
     const clientEmail = Deno.env.get('FIREBASE_CLIENT_EMAIL') ?? ''
     const privateKey = Deno.env.get('FIREBASE_PRIVATE_KEY') ?? ''
@@ -96,31 +132,16 @@ serve(async (req) => {
             data: {
               title,
               body,
-              url: '/dashboard',
+              url: actionUrl || '/dashboard',
             },
           },
         }),
       }
     )
 
-    const fcmResult = await fcmResponse.json()
-
-    await supabaseAdmin.from('notifications').insert({
-      user_id: recipientId,
-      title,
-      body,
-      type: 'transaction',
-      read: false,
-      action_url: actionUrl || null,
-    })
-
-    return new Response(JSON.stringify({ success: true, fcmResult }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return json({ success: true, push: fcmResponse.ok })
   } catch (err) {
-    return new Response(JSON.stringify({ error: String(err) }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    console.error('send-notification failed', err)
+    return json({ error: 'Notification failed' }, 500)
   }
 })

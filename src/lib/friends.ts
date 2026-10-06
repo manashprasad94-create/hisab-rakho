@@ -5,7 +5,7 @@ import { useAuthStore } from '../store/authStore'
 export async function searchUserByEmail(email: string) {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name, email, avatar_url')
+    .select('id, full_name, avatar_url')
     .eq('email', email.trim().toLowerCase())
     .maybeSingle()
   if (error) throw error
@@ -16,7 +16,7 @@ export async function searchUserByEmail(email: string) {
 export async function searchUserByPhone(phone: string) {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name, email, avatar_url')
+    .select('id, full_name, avatar_url')
     .eq('phone', phone.trim())
     .maybeSingle()
   if (error) throw error
@@ -25,56 +25,35 @@ export async function searchUserByPhone(phone: string) {
 
 // Store an invite for someone not yet registered
 export async function createPendingInvite(email: string) {
-  const userId = useAuthStore.getState().user?.id
-  if (!userId) throw new Error('Not logged in')
-
-  const { data, error } = await supabase
-    .from('pending_invites')
-    .insert({ invited_by: userId, invited_email: email.trim().toLowerCase() })
-    .select()
-    .single()
+  const { data, error } = await supabase.rpc('create_pending_invite', {
+    p_email: email.trim().toLowerCase(),
+  })
   if (error) throw error
   return data
 }
 
 // Send a friend request (creates friendship row, status pending)
 export async function sendFriendRequest(friendId: string) {
-  const userId = useAuthStore.getState().user?.id
-  if (!userId) throw new Error('Not logged in')
-  if (userId === friendId) throw new Error("Can't add yourself")
-
-  const { data: existing } = await supabase
-    .from('friendships')
-    .select('id, status')
-    .or(`and(user_a.eq.${userId},user_b.eq.${friendId}),and(user_a.eq.${friendId},user_b.eq.${userId})`)
-    .maybeSingle()
-
-  if (existing) throw new Error(`Friend request already ${existing.status}`)
-
-  const { data, error } = await supabase
-    .from('friendships')
-    .insert({ user_a: userId, user_b: friendId, status: 'pending' })
-    .select()
-    .single()
+  const { data, error } = await supabase.rpc('send_friend_request', {
+    p_friend_id: friendId,
+  })
   if (error) throw error
   return data
 }
 
 // Accept a pending friend request
 export async function acceptFriendRequest(friendshipId: string) {
-  const { error } = await supabase
-    .from('friendships')
-    .update({ status: 'accepted' })
-    .eq('id', friendshipId)
+  const { error } = await supabase.rpc('accept_friend_request', {
+    p_friendship_id: friendshipId,
+  })
   if (error) throw error
 }
 
 // Reject/remove a friend request or friendship
 export async function removeFriendship(friendshipId: string) {
-  const { error } = await supabase
-    .from('friendships')
-    .delete()
-    .eq('id', friendshipId)
+  const { error } = await supabase.rpc('remove_friendship', {
+    p_friendship_id: friendshipId,
+  })
   if (error) throw error
 }
 

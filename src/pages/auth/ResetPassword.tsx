@@ -1,3 +1,5 @@
+import StatusMessage from '../../components/StatusMessage'
+import { Input } from '../../components/FormControls'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Lock } from 'lucide-react'
@@ -27,18 +29,18 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg-soft px-4">
-      <div className="w-full max-w-sm">
+    <div className="auth-page">
+      <div className="auth-container">
         <h1 className="text-2xl font-semibold text-center mb-6">Set New Password</h1>
 
-        <Card className="p-6">
+        <Card className="auth-card">
           <form onSubmit={handleSubmit}>
-            {error && <p className="text-owe text-sm mb-4">{error}</p>}
+            {error && <StatusMessage>{error}</StatusMessage>}
 
-            <label className="flex items-center gap-1.5 text-sm mb-1 text-text-muted font-medium">
+            <label htmlFor="resetpassword-field-26" className="flex items-center gap-1.5 text-sm mb-1 text-text-muted font-medium">
               <Lock size={14} /> New Password
             </label>
-            <input
+            <Input id="resetpassword-field-26"
               type="password"
               required
               minLength={6}
@@ -47,7 +49,7 @@ export default function ResetPassword() {
               className="w-full mb-6 px-3 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
             />
 
-            <Button type="submit" disabled={loading} className="w-full">
+            <Button type="submit" loading={loading} className="w-full">
               {loading ? 'Updating...' : 'Update Password'}
             </Button>
           </form>

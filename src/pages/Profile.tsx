@@ -1,3 +1,6 @@
+import PageHeader from '../components/PageHeader'
+import StatusMessage from '../components/StatusMessage'
+import { Input } from '../components/FormControls'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LogOut, User as UserIcon, StickyNote } from 'lucide-react'
@@ -40,43 +43,44 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-soft p-4 pb-24">
-      <h1 className="text-xl font-semibold mb-4">Profile</h1>
+    <div className="app-page">
+      <PageHeader title={<> Profile </>} />
 
       <div className="flex items-center gap-3 mb-5">
         <Avatar name={fullName || 'U'} size="lg" />
         <div>
           <p className="font-semibold">{profile?.full_name}</p>
           <p className="text-sm text-text-muted">{profile?.email}</p>
-          <p className="text-sm text-text-muted">{profile?.phone}</p>   
+          <p className="text-sm text-text-muted">{profile?.phone}</p>
         </div>
       </div>
 
       <form onSubmit={handleSave}>
         <Card className="p-4 mb-4">
-          {message && <p className="text-sm text-primary mb-3">{message}</p>}
+          {message && <StatusMessage tone={message === 'Saved' ? 'success' : 'error'}>{message}</StatusMessage>}
 
-          <label className="flex items-center gap-1.5 text-sm mb-1 text-text-muted font-medium">
+          <label htmlFor="profile-field-20" className="flex items-center gap-1.5 text-sm mb-1 text-text-muted font-medium">
             <UserIcon size={14} /> Full Name
           </label>
-          <input
+          <Input id="profile-field-20"
             type="text"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             className="w-full mb-4 px-3 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
           />
 
-          <label className="flex items-center gap-1.5 text-sm mb-1 text-text-muted font-medium">
+          <label htmlFor="profile-field-21" className="flex items-center gap-1.5 text-sm mb-1 text-text-muted font-medium">
             <UserIcon size={14} /> Phone Number
           </label>
-          <input
+          <Input id="profile-field-21"
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="+91 9876543210"
             className="w-full mb-4 px-3 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
           />
-          <input
+          <label htmlFor="profile-upi" className="block text-sm mb-1 font-medium">UPI ID</label>
+          <Input id="profile-upi"
             type="text"
             value={upiId}
             onChange={(e) => setUpiId(e.target.value)}
@@ -85,7 +89,7 @@ export default function Profile() {
           />
           <p className="text-xs text-text-muted mb-4">Needed so friends can pay you via UPI</p>
 
-          <Button type="submit" disabled={loading} className="w-full">
+          <Button type="submit" loading={loading} className="w-full">
             {loading ? 'Saving...' : 'Save Changes'}
           </Button>
         </Card>

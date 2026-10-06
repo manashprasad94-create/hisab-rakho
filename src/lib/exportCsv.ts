@@ -8,7 +8,9 @@ export function exportToCsv(filename: string, rows: Record<string, any>[]) {
       headers
         .map((h) => {
           const val = row[h] ?? ''
-          const escaped = String(val).replace(/"/g, '""')
+          // Spreadsheet apps may execute text starting with a formula operator.
+          const safe = typeof val === 'string' && /^\s*[=+\-@]/.test(val) ? `'${val}` : String(val)
+          const escaped = safe.replace(/"/g, '""')
           return `"${escaped}"`
         })
         .join(',')

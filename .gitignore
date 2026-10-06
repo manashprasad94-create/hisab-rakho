@@ -9,6 +9,22 @@ dist-ssr/
 .env
 .env.local
 .env.*.local
+.env.*
+!.env.example
+
+# local Python environments and caches
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+
+# local agent tooling and review artifacts
+.agents/
+.codex/
+skills-lock.json
+.impeccable/*
+!.impeccable/design.json
+.vercel/
 
 # editor
 .vscode/*

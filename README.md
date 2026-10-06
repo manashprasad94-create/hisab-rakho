@@ -57,6 +57,7 @@
 - **Multi-Holder Balances:** Track physical cash and online bank balances held by different group members.
 - **Role-Based Access:** `owner`, `admin`, and `member` roles.
 - **Fund Expense Logging:** Group admins/owners can log fund expenditures, automatically deducting from the respective holder's cash or online balance.
+- **Deposits:** Owners can add cash or online money to an owner or admin holder, include a reason, and record an earlier date.
 - **Audit History:** Full log of fund expenses, timestamps, and who recorded them.
 
 ### 📊 Personal Expense Tracker
@@ -337,11 +338,19 @@ The Supabase Edge Functions require their own secrets configured via the Supabas
 | `send-reminder` | `BREVO_API_KEY` | API Key for Brevo transactional email API. |
 | `send-reminder` | `BREVO_SENDER_EMAIL` | Verified sender email address configured in Brevo. |
 
+All three Edge Functions also use Supabase's `SUPABASE_URL` and
+`SUPABASE_SERVICE_ROLE_KEY` environment variables to verify callers and enforce
+hourly request quotas. Apply the SQL migrations before deploying the functions.
+
 ---
 
 ## 9. Supabase Backend & Edge Functions
 
 ### Database Tables Schema
+
+Apply the migrations in `supabase/migrations` in filename order before using the
+current frontend. See `docs/AUDIT_FIXES.md` for deployment order and the live RLS
+review. The original table creation SQL is not stored in this repository.
 
 The application relies on PostgreSQL tables with Row Level Security (RLS):
 

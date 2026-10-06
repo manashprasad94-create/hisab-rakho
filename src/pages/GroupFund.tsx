@@ -1,7 +1,12 @@
-import { useEffect, useState } from 'react'
+import StatusMessage from '../components/StatusMessage'
+import LoadingState from '../components/LoadingState'
+import PageHeader from '../components/PageHeader'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, PiggyBank, MinusCircle, History, Users } from 'lucide-react'
+import { ArrowLeft, PiggyBank, MinusCircle, PlusCircle, History, Users } from 'lucide-react'
 import { getMyRoleInFund, getHolderBalances } from '../lib/groupFund'
+import { errorMessage } from '../lib/errorMessage'
+import { supabase } from '../lib/supabase'
 import Card from '../components/card'
 import Button from '../components/Button'
 
@@ -12,36 +17,47 @@ export default function GroupFund() {
   const [holderBalances, setHolderBalances] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [notMember, setNotMember] = useState(false)
+  const [error, setError] = useState('')
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!fundId) return
-    const r = await getMyRoleInFund(fundId)
-    if (!r) {
-      setNotMember(true)
+    try {
+      const r = await getMyRoleInFund(fundId)
+      if (!r) {
+        setNotMember(true)
+        return
+      }
+      setRole(r)
+      setHolderBalances(await getHolderBalances(fundId))
+    } catch (err) {
+      setError(errorMessage(err, 'Could not load fund'))
+    } finally {
       setLoading(false)
-      return
     }
-    setRole(r)
-    const holders = await getHolderBalances(fundId)
-    setHolderBalances(holders)
-    setLoading(false)
-  }
+  }, [fundId])
 
   useEffect(() => {
     loadData()
-  }, [fundId])
+    if (!fundId) return
+    const channel = supabase.channel(`group-fund-${fundId}`)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'group_fund_balances', filter: `fund_id=eq.${fundId}`,
+      }, () => { loadData() })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [fundId, loadData])
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-bg-soft p-4">
-        <div className="h-32 bg-white/60 rounded-2xl animate-pulse" />
+      <div className="app-page">
+        <LoadingState label="Loading fund balances" />
       </div>
     )
   }
 
   if (notMember) {
     return (
-      <div className="min-h-screen bg-bg-soft p-4 flex items-center justify-center">
+      <div className="app-page">
         <Card className="p-6 text-center max-w-sm">
           <PiggyBank size={32} className="text-primary mx-auto mb-3" />
           <p className="font-medium">You're not part of this fund</p>
@@ -58,14 +74,13 @@ export default function GroupFund() {
   const totalRemaining = holderBalances.reduce((sum, h) => sum + h.total, 0)
 
   return (
-    <div className="min-h-screen bg-bg-soft p-4 pb-24">
+    <div className="app-page">
       <button onClick={() => navigate('/group-funds')} className="flex items-center gap-1 text-text-muted mb-3 text-sm">
         <ArrowLeft size={16} /> All Funds
       </button>
-      <h1 className="text-xl font-semibold mb-1 flex items-center gap-2">
-        <PiggyBank size={22} className="text-primary" /> Group Fund
-      </h1>
+      <PageHeader title={<> <PiggyBank size={22} className="text-primary" /> Group Fund </>} />
       <p className="text-xs text-text-muted mb-4">Shared with your group · {role}</p>
+      {error && <StatusMessage>{error}</StatusMessage>}
 
       <div className="bg-primary text-white rounded-2xl p-6 mb-4 shadow-sm">
         <p className="text-sm opacity-80">Total Remaining</p>
@@ -73,7 +88,7 @@ export default function GroupFund() {
       </div>
 
       {holderBalances.length > 0 && (
-        <div className="space-y-2 mb-4">
+        <div className="record-list mb-4">
           {holderBalances.map((h) => (
             <Card key={h.userId} className="p-3">
               <div className="flex justify-between items-center mb-2">
@@ -90,6 +105,11 @@ export default function GroupFund() {
       )}
 
       <div className="flex gap-2 mb-3">
+        {role === 'owner' && (
+          <Button onClick={() => navigate(`/group-fund/${fundId}/deposit`)} className="flex-1 flex items-center justify-center gap-2">
+            <PlusCircle size={16} /> Add Money
+          </Button>
+        )}
         {canAddExpense && (
           <Button onClick={() => navigate(`/group-fund/${fundId}/add-expense`)} className="flex-1 flex items-center justify-center gap-2">
             <MinusCircle size={16} /> Add Expense

@@ -1,4 +1,8 @@
-import { useEffect, useState } from 'react'
+import LoadingState from '../components/LoadingState'
+import StatusMessage from '../components/StatusMessage'
+import PageHeader from '../components/PageHeader'
+import { Input } from '../components/FormControls'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Wallet, Trash2, UtensilsCrossed, ShoppingBag, Plane, Film, GraduationCap, MoreHorizontal, Search, Download, ChevronLeft, ChevronRight, Pencil } from 'lucide-react'
 import { listExpenses, deleteExpense, updateExpense, getCategorySummary } from '../lib/expenses'
@@ -6,6 +10,7 @@ import Card from '../components/card'
 import Button from '../components/Button'
 import EmptyState from '../components/EmptyState'
 import { exportToCsv } from '../lib/exportCsv'
+import { localDate } from '../lib/localDate'
 
 const CATEGORY_ICONS: Record<string, any> = {
   food: UtensilsCrossed,
@@ -27,19 +32,28 @@ export default function Expenses() {
     count: 0,
   })
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [filterQuery, setFilterQuery] = useState('')
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)) // "YYYY-MM"
+  const [selectedMonth, setSelectedMonth] = useState(() => localDate(true))
 
-  const loadData = async () => {
-    const [list, sum] = await Promise.all([listExpenses(), getCategorySummary(selectedMonth)])
-    setExpenses(list)
-    setSummary(sum)
-    setLoading(false)
-  }
+  const loadData = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const list = await listExpenses(selectedMonth)
+      const sum = await getCategorySummary(selectedMonth, list)
+      setExpenses(list)
+      setSummary(sum)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not load expenses')
+    } finally {
+      setLoading(false)
+    }
+  }, [selectedMonth])
 
   useEffect(() => {
     loadData()
-  }, [selectedMonth])
+  }, [loadData])
 
   const changeMonth = (delta: number) => {
     let [year, month] = selectedMonth.split('-').map(Number)
@@ -68,7 +82,7 @@ export default function Expenses() {
   )
 
   const groupedByDate = filteredExpenses.reduce((groups: Record<string, any[]>, e) => {
-    const dateKey = new Date(e.spent_on).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+    const dateKey = new Date(`${e.spent_on}T12:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
     if (!groups[dateKey]) groups[dateKey] = []
     groups[dateKey].push(e)
     return groups
@@ -88,14 +102,20 @@ export default function Expenses() {
 
   const saveEdit = async (id: string) => {
     if (!editAmount || Number(editAmount) <= 0) return
-    await updateExpense(id, { amount: Number(editAmount), note: editNote, payment_mode: editMode })
-    setEditingId(null)
-    loadData()
+    try {
+      await updateExpense(id, { amount: Number(editAmount), note: editNote, payment_mode: editMode })
+      setEditingId(null)
+      loadData()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not update expense')
+    }
   }
 
   const handleDeleteClick = (id: string) => {
     if (confirmDeleteId === id) {
-      deleteExpense(id).then(loadData)
+      deleteExpense(id).then(loadData).catch((err) => {
+        setError(err instanceof Error ? err.message : 'Could not delete expense')
+      })
       setConfirmDeleteId(null)
     } else {
       setConfirmDeleteId(id)
@@ -104,16 +124,16 @@ export default function Expenses() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-soft p-4 pb-24">
-      <h1 className="text-xl font-semibold mb-4">Expenses</h1>
+    <div className="app-page">
+      <PageHeader title={<> Expenses </>} />
 
       <div className="bg-primary text-white rounded-2xl p-6 mb-4 shadow-sm">
         <div className="flex items-center justify-between mb-2">
-          <button onClick={() => changeMonth(-1)} className="p-1">
+          <button onClick={() => changeMonth(-1)} className="icon-button" aria-label="Previous month">
             <ChevronLeft size={18} />
           </button>
           <p className="text-sm font-medium">{monthLabel}</p>
-          <button onClick={() => changeMonth(1)} className="p-1">
+          <button onClick={() => changeMonth(1)} className="icon-button" aria-label="Next month">
             <ChevronRight size={18} />
           </button>
         </div>
@@ -124,7 +144,7 @@ export default function Expenses() {
       {Object.keys(summary.summary).length > 0 && (
         <Card className="p-4 mb-4">
           <h2 className="text-sm font-semibold text-text-muted mb-3">By Category</h2>
-          <div className="space-y-2">
+          <div className="record-list">
             {Object.entries(summary.summary)
               .sort((a, b) => b[1] - a[1])
               .map(([cat, amt]) => {
@@ -167,19 +187,21 @@ export default function Expenses() {
                 }))
               )
             }
-            className="flex items-center justify-center gap-2 px-4"
+            aria-label="Export expenses" title="Export expenses" className="flex items-center justify-center gap-2 px-4"
           >
             <Download size={18} />
           </Button>
         )}
       </div>
 
-      <h2 className="text-sm font-semibold text-text-muted mb-3">All Expenses</h2>
+      <h2 className="text-sm font-semibold text-text-muted mb-3">Expenses this month</h2>
+
+      {error && <StatusMessage>{error}</StatusMessage>}
 
       {expenses.length > 3 && (
         <div className="relative mb-3">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-          <input
+          <Input aria-label="Search records"
             type="text"
             value={filterQuery}
             onChange={(e) => setFilterQuery(e.target.value)}
@@ -190,12 +212,10 @@ export default function Expenses() {
       )}
 
       {loading ? (
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => <div key={i} className="h-16 bg-white/60 rounded-2xl animate-pulse border border-border" />)}
-        </div>
+        <LoadingState />
       ) : filteredExpenses.length === 0 ? (
         <Card className="p-2">
-          <EmptyState icon={Wallet} title="No expenses yet" subtitle="Add your first expense to start tracking spending" />
+          <EmptyState icon={Wallet} title={filterQuery ? 'No matching expenses' : 'No expenses this month'} subtitle={filterQuery ? 'Try another search or clear the search field.' : 'Add an expense to start tracking spending for this month.'} />
         </Card>
       ) : (
         <div className="space-y-4">
@@ -211,29 +231,29 @@ export default function Expenses() {
                   if (editingId === e.id) {
                     return (
                       <Card key={e.id} className="p-3">
-                        <label className="block text-xs mb-1 text-text-muted font-medium">Amount</label>
-                        <input
+                        <label htmlFor="expenses-field-12" className="block text-xs mb-1 text-text-muted font-medium">Amount</label>
+                        <Input id="expenses-field-12"
                           type="number"
                           value={editAmount}
                           onChange={(ev) => setEditAmount(ev.target.value)}
                           className="w-full mb-2 px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                         />
-                        <label className="block text-xs mb-1 text-text-muted font-medium">Reason / Details</label>
-                        <input
+                        <label htmlFor="expenses-field-13" className="block text-xs mb-1 text-text-muted font-medium">Reason / Details</label>
+                        <Input id="expenses-field-13"
                           type="text"
                           value={editNote}
                           onChange={(ev) => setEditNote(ev.target.value)}
                           className="w-full mb-2 px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                         />
                         <div className="flex gap-2 mb-3">
-                          <button
+                          <button aria-pressed={editMode === 'cash'}
                             type="button"
                             onClick={() => setEditMode('cash')}
                             className={`flex-1 py-1.5 rounded-lg text-xs font-medium border ${editMode === 'cash' ? 'bg-primary text-white border-primary' : 'border-border text-text-muted'}`}
                           >
                             Cash
                           </button>
-                          <button
+                          <button aria-pressed={editMode === 'online'}
                             type="button"
                             onClick={() => setEditMode('online')}
                             className={`flex-1 py-1.5 rounded-lg text-xs font-medium border ${editMode === 'online' ? 'bg-primary text-white border-primary' : 'border-border text-text-muted'}`}
@@ -256,20 +276,21 @@ export default function Expenses() {
                           <Icon size={16} className="text-primary" />
                         </div>
                         <div>
-                          <p className="font-medium text-sm">{e.note || 'No reason'}</p>
-                          <p className="text-xs text-text-muted capitalize">
+                          <p className="record-title">{e.note || 'No reason'}</p>
+                          <p className="record-meta text-text-muted capitalize">
                             {e.category} · {e.payment_mode || 'online'}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <p className="font-semibold text-sm">₹{Number(e.amount).toFixed(2)}</p>
-                        <button onClick={() => startEdit(e)} className="text-text-muted hover:text-primary transition">
+                        <button onClick={() => startEdit(e)} className="icon-button text-text-muted hover:text-primary transition" aria-label="Edit expense">
                           <Pencil size={14} />
                         </button>
                         <button
                           onClick={() => handleDeleteClick(e.id)}
-                          className={`transition ${confirmDeleteId === e.id ? 'text-owe font-medium text-xs px-2 py-1 bg-owe/10 rounded-lg' : 'text-text-muted hover:text-owe'}`}
+                          aria-label={confirmDeleteId === e.id ? 'Confirm deleting expense' : 'Delete expense'}
+                          className={`icon-button transition ${confirmDeleteId === e.id ? 'text-owe font-medium text-xs px-2 py-1 bg-owe/10 rounded-lg' : 'text-text-muted hover:text-owe'}`}
                         >
                           {confirmDeleteId === e.id ? 'Confirm?' : <Trash2 size={15} />}
                         </button>

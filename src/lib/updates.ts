@@ -29,6 +29,6 @@ export async function getUnreadCount() {
 }
 
 export async function markUpdateRead(id: string) {
-  const { error } = await supabase.from('notifications').update({ read: true }).eq('id', id)
+  const { error } = await supabase.rpc('mark_notification_read', { p_notification_id: id })
   if (error) throw error
 }
