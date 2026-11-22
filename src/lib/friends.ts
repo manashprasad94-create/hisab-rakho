@@ -50,6 +50,13 @@ export async function acceptFriendRequest(friendshipId: string) {
 }
 
 // Reject/remove a friend request or friendship
+export async function rejectFriendRequest(friendshipId: string) {
+  const { error } = await supabase.rpc('remove_friendship', {
+    p_friendship_id: friendshipId,
+  })
+  if (error) throw error
+}
+
 export async function removeFriendship(friendshipId: string) {
   const { error } = await supabase.rpc('remove_friendship', {
     p_friendship_id: friendshipId,
@@ -87,4 +94,24 @@ export async function listPendingRequests() {
     .eq('status', 'pending')
   if (error) throw error
   return data
+}
+
+export async function listSentRequests() {
+  const userId = useAuthStore.getState().user?.id
+  if (!userId) throw new Error('Not logged in')
+
+  const { data, error } = await supabase
+    .from('friendships')
+    .select('id, user_b, profiles_b:user_b(id, full_name, email, avatar_url)')
+    .eq('user_a', userId)
+    .eq('status', 'pending')
+  if (error) throw error
+  return data
+}
+
+export async function cancelFriendRequest(friendshipId: string) {
+  const { error } = await supabase.rpc('remove_friendship', {
+    p_friendship_id: friendshipId,
+  })
+  if (error) throw error
 }

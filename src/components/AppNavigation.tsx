@@ -29,7 +29,7 @@ export default function AppNavigation() {
         </Link>
       })}
     </div>
-    <Link to="/profile" className="navigation-account"><Avatar name={profile?.full_name || 'You'} />
+    <Link to="/profile" className="navigation-account"><Avatar name={profile?.full_name || 'You'} src={profile?.avatar_url || undefined} />
       <div className="min-w-0"><p className="text-sm font-semibold">{profile?.full_name || 'Your account'}</p><p className="text-xs text-text-muted">Manage profile</p></div>
     </Link>
   </nav>

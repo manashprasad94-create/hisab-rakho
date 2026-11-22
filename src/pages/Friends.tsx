@@ -10,8 +10,11 @@ import {
   searchUserByPhone,
   sendFriendRequest,
   acceptFriendRequest,
+  rejectFriendRequest,
   listFriends,
   listPendingRequests,
+  listSentRequests,
+  cancelFriendRequest,
   createPendingInvite,
 } from '../lib/friends'
 import Card from '../components/card'
@@ -24,6 +27,7 @@ export default function Friends() {
   const navigate = useNavigate()
   const [friends, setFriends] = useState<any[]>([])
   const [pending, setPending] = useState<any[]>([])
+  const [sent, setSent] = useState<any[]>([])
   const [searchEmail, setSearchEmail] = useState('')
   const [searchMode, setSearchMode] = useState<'email' | 'phone'>('email')
   const [searchResult, setSearchResult] = useState<any>(null)
@@ -34,9 +38,10 @@ export default function Friends() {
 
   const loadData = async () => {
     try {
-      const [f, p] = await Promise.all([listFriends(), listPendingRequests()])
+      const [f, p, s] = await Promise.all([listFriends(), listPendingRequests(), listSentRequests()])
       setFriends(f)
       setPending(p)
+      setSent(s ?? [])
     } catch (err) {
       setMessage(errorMessage(err, 'Could not load friends'))
     } finally {
@@ -87,6 +92,15 @@ export default function Friends() {
     }
   }
 
+  const handleReject = async (friendshipId: string) => {
+    try {
+      await rejectFriendRequest(friendshipId)
+      await loadData()
+    } catch (err) {
+      setMessage(errorMessage(err, 'Could not reject request'))
+    }
+  }
+
   const handleAccept = async (friendshipId: string) => {
     try {
       await acceptFriendRequest(friendshipId)
@@ -96,9 +110,18 @@ export default function Friends() {
     }
   }
 
+  const handleCancel = async (friendshipId: string) => {
+    try {
+      await cancelFriendRequest(friendshipId)
+      await loadData()
+    } catch (err) {
+      setMessage(errorMessage(err, 'Could not cancel request'))
+    }
+  }
+
   return (
     <div className="app-page">
-      <PageHeader title={<> Friends </>} />
+      <PageHeader title={<> Friends </> } />
 
       <Card className="p-4 mb-4">
         <div className="flex gap-2 mb-2">
@@ -167,11 +190,38 @@ export default function Friends() {
             {pending.map((req: any) => (
               <Card key={req.id} className="p-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Avatar name={req.profiles_a.full_name} size="sm" />
+                  <Avatar name={req.profiles_a.full_name} src={req.profiles_a.avatar_url || undefined} size="sm" />
                   <span className="text-sm font-medium">{req.profiles_a.full_name}</span>
                 </div>
-                <Button onClick={() => handleAccept(req.id)} className="text-sm py-1.5 px-3">
-                  Accept
+                <div className="flex items-center gap-2">
+                  <Button variant="secondary" onClick={() => handleReject(req.id)} className="text-sm py-1.5 px-3">
+                    Reject
+                  </Button>
+                  <Button onClick={() => handleAccept(req.id)} className="text-sm py-1.5 px-3">
+                    Accept
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {sent.length > 0 && (
+        <div className="mb-4">
+          <h2 className="text-sm font-semibold text-text-muted mb-2">Sent Requests</h2>
+          <div className="record-list">
+            {sent.map((req: any) => (
+              <Card key={req.id} className="p-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Avatar name={req.profiles_b.full_name} src={req.profiles_b.avatar_url || undefined} size="sm" />
+                  <div>
+                    <span className="text-sm font-medium">{req.profiles_b.full_name}</span>
+                    <p className="text-xs text-text-muted">Request pending</p>
+                  </div>
+                </div>
+                <Button variant="secondary" onClick={() => handleCancel(req.id)} className="text-sm py-1.5 px-3">
+                  Cancel
                 </Button>
               </Card>
             ))}
