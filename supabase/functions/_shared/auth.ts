@@ -31,7 +31,7 @@ export function json(body: unknown, status = 200) {
   })
 }
 
-export async function claimQuota(userId: string, channel: 'notification' | 'reminder' | 'ocr', limit: number) {
+export async function claimQuota(userId: string, channel: 'notification' | 'reminder' | 'ocr' | 'transaction_draft', limit: number) {
   const { data, error } = await adminClient().rpc('claim_outbound_quota', {
     p_user_id: userId,
     p_channel: channel,

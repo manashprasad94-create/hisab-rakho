@@ -3,7 +3,8 @@ import StatusMessage from '../components/StatusMessage'
 import { Input } from '../components/FormControls'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, User as UserIcon, StickyNote } from 'lucide-react'
+import { LogOut, User as UserIcon, StickyNote, Sun, Moon, Monitor } from 'lucide-react'
+import { useThemeStore } from '../store/themeStore'
 import { useAuthStore } from '../store/authStore'
 import { updateProfile } from '../lib/profile'
 import { signOut } from '../lib/auth'
@@ -13,6 +14,7 @@ import Avatar from '../components/Avatar'
 
 export default function Profile() {
   const { profile, setProfile } = useAuthStore()
+  const { theme, setTheme } = useThemeStore()
   const navigate = useNavigate()
   const [fullName, setFullName] = useState(profile?.full_name || '')
   const [upiId, setUpiId] = useState(profile?.upi_id || '')
@@ -95,6 +97,41 @@ export default function Profile() {
         </Card>
       </form>
 
+      <Card className="p-4 mb-3">
+        <p className="text-sm font-semibold mb-3">Appearance</p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            aria-pressed={theme === 'light'}
+            onClick={() => setTheme('light')}
+            className="flex-1 flex flex-col items-center gap-1.5 py-2.5 rounded-xl border text-sm font-semibold transition-colors"
+            style={{ borderColor: theme === 'light' ? 'var(--color-primary)' : 'var(--color-border)', background: theme === 'light' ? 'var(--color-accent-soft)' : 'transparent', color: theme === 'light' ? 'var(--color-primary)' : 'var(--color-text-muted)' }}
+          >
+            <Sun size={18} />
+            Light
+          </button>
+          <button
+            type="button"
+            aria-pressed={theme === 'dark'}
+            onClick={() => setTheme('dark')}
+            className="flex-1 flex flex-col items-center gap-1.5 py-2.5 rounded-xl border text-sm font-semibold transition-colors"
+            style={{ borderColor: theme === 'dark' ? 'var(--color-primary)' : 'var(--color-border)', background: theme === 'dark' ? 'var(--color-accent-soft)' : 'transparent', color: theme === 'dark' ? 'var(--color-primary)' : 'var(--color-text-muted)' }}
+          >
+            <Moon size={18} />
+            Dark
+          </button>
+          <button
+            type="button"
+            aria-pressed={theme === 'system'}
+            onClick={() => setTheme('system')}
+            className="flex-1 flex flex-col items-center gap-1.5 py-2.5 rounded-xl border text-sm font-semibold transition-colors"
+            style={{ borderColor: theme === 'system' ? 'var(--color-primary)' : 'var(--color-border)', background: theme === 'system' ? 'var(--color-accent-soft)' : 'transparent', color: theme === 'system' ? 'var(--color-primary)' : 'var(--color-text-muted)' }}
+          >
+            <Monitor size={18} />
+            System
+          </button>
+        </div>
+      </Card>
       <Button variant="secondary" onClick={() => navigate('/personal-notes')} className="w-full flex items-center justify-center gap-2 mb-3">
         <StickyNote size={16} /> Personal Notes
       </Button>

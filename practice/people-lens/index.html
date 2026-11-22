@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#203047"><title>People Lens · YOLO practice</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head>
+<body><main>
+  <header><a href="/" class="brand" aria-label="People Lens home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/><circle cx="12" cy="10" r="3"/><path d="M7 18c0-5 10-5 10 0"/></svg>People Lens</a><span class="badge">YOLO practice</span></header>
+  <section class="intro"><h1>See what the model sees.</h1><p>Point your camera at a scene. Find people, one frame at a time.</p></section>
+  <div class="workspace">
+    <section class="viewer" aria-label="Camera and detection preview">
+      <div class="viewtop"><span id="mode">Camera off</span><span id="device">Checking laptop…</span></div>
+      <div class="stage"><video id="video" muted playsinline aria-label="Live camera preview"></video><canvas id="result" aria-label="Latest analysed frame with person detection boxes"></canvas><div id="empty"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M17 13l3-5h8l3 5h9v27H8V13z"/><circle cx="24" cy="26" r="8"/></svg><h2>Your camera starts here</h2><p>Allow camera access when prompted.<br>Frames are processed on your laptop.</p></div></div>
+      <div class="readout"><span><strong id="count">—</strong> people in this frame</span><span id="timing">Awaiting a frame</span></div>
+    </section>
+    <aside>
+      <form id="controls"><h2>Connect & explore</h2><label for="pairing">Laptop pairing code</label><input id="pairing" type="password" autocomplete="off" placeholder="Paste the code from your laptop" required><p class="hint">Shown when you start the detection service.</p>
+      <label for="camera">Camera</label><select id="camera"><option value="environment">Back camera</option><option value="user">Front camera</option></select>
+      <div class="labelrow"><label for="confidence">Confidence threshold</label><output id="confidenceValue" for="confidence">40%</output></div><input id="confidence" type="range" min="10" max="90" value="40" step="5"><p class="hint">Raise this to hide uncertain detections.</p>
+      <div class="actions"><button id="start" type="submit">Start camera</button><button id="stop" type="button" class="secondary" disabled>Stop camera</button></div>
+      <div class="photo"><label for="photo">Or try a photo</label><input id="photo" type="file" accept="image/jpeg,image/png,image/webp"><p class="hint">A useful first test without camera permission.</p></div></form>
+      <p id="status" role="status" aria-live="polite">Connecting to the detection service…</p>
+      <details><summary>How does this work?</summary><p>Your phone sends small image frames to your laptop. YOLO finds people and returns a box and confidence score for each detection.</p><p>The preview shows the exact analysed frame so boxes stay aligned. This counts visible people, not unique visitors. Frames are not saved by this app.</p></details>
+    </aside>
+  </div><footer>Phone camera → laptop YOLO → person detections</footer>
+</main></body></html>

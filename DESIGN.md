@@ -186,6 +186,15 @@ Badges use compact corners, 4px 8px padding, and explicit neutral, success, erro
 
 StatusMessage uses labeled semantic errors/success and neutral information. EmptyState and LoadingState provide explanatory text and accessible loading labels. Transitions last 160–180ms for color, border, and shadow feedback. Visible ink focus remains consistent. Reduced motion disables transitions, smooth scrolling, and decorative animation.
 
+### Natural-language entry
+
+An optional, collapsed white card introduces transaction drafting. Use the existing
+textarea, ink/neutral buttons, status messages, and searchable friend selector.
+Review details appear as simple label/value rows separated from the description
+by a fine border. AI output must be presented as a suggestion, with explicit
+clarification or error states. Applying a draft fills the editable form; it does
+not save financial records. Keep manual entry available throughout.
+
 ## Do's and Don'ts
 
 ### Do:

@@ -12,6 +12,7 @@ import Card from '../components/card'
 import Button from '../components/Button'
 import Avatar from '../components/Avatar'
 import FriendSelect from '../components/FriendSelect'
+import TransactionQuickEntry from '../components/TransactionQuickEntry'
 
 export default function AddTransaction() {
   const navigate = useNavigate()
@@ -128,6 +129,15 @@ export default function AddTransaction() {
         <ArrowLeft size={16} /> Back
       </button>
       <PageHeader title={<> Add Transaction </>} />
+
+      <TransactionQuickEntry friends={friends.map((f) => ({ id: f.friend.id, name: f.friend.full_name || 'Unnamed friend' }))} onApply={(draft) => {
+        setMode(draft.mode!); setAmount(draft.amount!); setReason(draft.reason); setCategory(draft.category)
+        setDirection(draft.direction!); setReciprocalMatch(null); setError('')
+        if (draft.mode === 'single') setFriendId(draft.friendIds[0])
+        else setSelectedFriends(draft.friendIds)
+        setShowPersonalNote(false); setShowNonFriendSearch(false); setNonFriendResult(null)
+        requestAnimationFrame(() => document.getElementById('addtransaction-field-8')?.focus())
+      }} />
 
       <div className="transaction-modes mb-4">
         <button aria-pressed={mode === 'single'}

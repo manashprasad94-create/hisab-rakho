@@ -25,6 +25,11 @@ group funds, separate cash and online holder balances, deposits with reasons and
 dates, and transaction history. Currency and UPI workflows follow the existing
 Indian financial context.
 
+Optional natural-language entry prepares friend transaction drafts from a sentence.
+Users review participant matches and suggested details before filling the existing
+form and saving. This requires the dedicated AI function and quota migration;
+deployment and live model behavior must be verified separately.
+
 ## Capabilities and Constraints
 
 - Preserve the React/TypeScript, Vite, Tailwind, and Supabase architecture.
