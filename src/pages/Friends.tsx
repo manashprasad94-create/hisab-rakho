@@ -171,12 +171,12 @@ export default function Friends() {
         )}
 
         {searchResult && (
-          <div className="flex items-center justify-between mt-3 p-3 bg-bg-soft rounded-xl">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between mt-3 p-3 bg-bg-soft rounded-xl gap-2">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
               <Avatar name={searchResult.full_name} size="sm" />
-              <span className="text-sm font-medium">{searchResult.full_name}</span>
+              <span className="text-sm font-medium truncate">{searchResult.full_name}</span>
             </div>
-            <Button onClick={() => handleAdd(searchResult.id)} disabled={loading} className="text-sm py-1.5 px-3">
+            <Button size="sm" onClick={() => handleAdd(searchResult.id)} disabled={loading} className="shrink-0">
               Add
             </Button>
           </div>
@@ -188,16 +188,16 @@ export default function Friends() {
           <h2 className="text-sm font-semibold text-text-muted mb-2">Pending Requests</h2>
           <div className="record-list">
             {pending.map((req: any) => (
-              <Card key={req.id} className="p-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              <Card key={req.id} className="p-3 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
                   <Avatar name={req.profiles_a.full_name} src={req.profiles_a.avatar_url || undefined} size="sm" />
-                  <span className="text-sm font-medium">{req.profiles_a.full_name}</span>
+                  <span className="text-sm font-medium truncate">{req.profiles_a.full_name}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="secondary" onClick={() => handleReject(req.id)} className="text-sm py-1.5 px-3">
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Button variant="secondary" size="sm" onClick={() => handleReject(req.id)}>
                     Reject
                   </Button>
-                  <Button onClick={() => handleAccept(req.id)} className="text-sm py-1.5 px-3">
+                  <Button size="sm" onClick={() => handleAccept(req.id)}>
                     Accept
                   </Button>
                 </div>
@@ -212,15 +212,15 @@ export default function Friends() {
           <h2 className="text-sm font-semibold text-text-muted mb-2">Sent Requests</h2>
           <div className="record-list">
             {sent.map((req: any) => (
-              <Card key={req.id} className="p-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              <Card key={req.id} className="p-3 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
                   <Avatar name={req.profiles_b.full_name} src={req.profiles_b.avatar_url || undefined} size="sm" />
-                  <div>
-                    <span className="text-sm font-medium">{req.profiles_b.full_name}</span>
+                  <div className="min-w-0">
+                    <span className="text-sm font-medium block truncate">{req.profiles_b.full_name}</span>
                     <p className="text-xs text-text-muted">Request pending</p>
                   </div>
                 </div>
-                <Button variant="secondary" onClick={() => handleCancel(req.id)} className="text-sm py-1.5 px-3">
+                <Button variant="secondary" size="sm" onClick={() => handleCancel(req.id)} className="shrink-0">
                   Cancel
                 </Button>
               </Card>
