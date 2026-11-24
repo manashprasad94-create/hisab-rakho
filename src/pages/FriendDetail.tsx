@@ -17,7 +17,7 @@ import {
   rejectTransaction,
   editPendingTransaction,
 } from '../lib/transactions'
-import { generateUpiLink } from '../lib/upi'
+import UpiPaymentModal from '../components/UpiPaymentModal'
 import Card from '../components/card'
 import Badge from '../components/Badge'
 import Button from '../components/Button'
@@ -222,9 +222,17 @@ export default function FriendDetail() {
     }
   }
 
-  const handlePayViaUpi = (upiId: string, name: string, amount: number, note: string) => {
-    window.location.href = generateUpiLink(upiId, name, amount, note)
-  }
+  const [upiModalState, setUpiModalState] = useState<{
+    isOpen: boolean
+    amount: number
+    reason: string
+    transactionId: string
+  }>({
+    isOpen: false,
+    amount: 0,
+    reason: '',
+    transactionId: '',
+  })
 
   if (loading) {
     return (
@@ -378,9 +386,14 @@ export default function FriendDetail() {
                         <div className="mt-3 flex gap-2 flex-wrap">
                           {iAmPayee && pending.length === 0 && (
                             <>
-                              {friend.upi_id && (
+                              {(friend.upi_id || friend.phone) && (
                                 <Button
-                                  onClick={() => handlePayViaUpi(friend.upi_id, friend.full_name, t.remaining_amount, t.reason)}
+                                  onClick={() => setUpiModalState({
+                                    isOpen: true,
+                                    amount: Number(t.remaining_amount),
+                                    reason: t.reason || 'Payment',
+                                    transactionId: t.id,
+                                  })}
                                   className="text-xs py-1.5 px-3"
                                 >
                                   Pay via UPI
@@ -436,6 +449,18 @@ export default function FriendDetail() {
             </Button>
           )}
         </div>
+      )}
+
+      {friend && (
+        <UpiPaymentModal
+          isOpen={upiModalState.isOpen}
+          onClose={() => setUpiModalState((prev) => ({ ...prev, isOpen: false }))}
+          friend={friend}
+          amount={upiModalState.amount}
+          reason={upiModalState.reason}
+          transactionId={upiModalState.transactionId}
+          onMarkPaid={handleMarkPaid}
+        />
       )}
     </div>
   )
