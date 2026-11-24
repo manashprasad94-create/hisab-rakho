@@ -105,7 +105,7 @@ export default function FundMembers() {
           {members.map((m) => (
             <Card key={m.id} className="p-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Avatar name={m.profiles?.full_name || '?'} size="sm" />
+                <Avatar name={m.profiles?.full_name || '?'} size="sm" src={m.profiles?.avatar_url || undefined} />
                 <span className="text-sm font-medium">{m.profiles?.full_name}</span>
               </div>
               <span className="capitalize"><Badge>{m.role}</Badge></span>

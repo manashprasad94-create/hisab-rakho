@@ -247,7 +247,7 @@ export default function FriendDetail() {
       </button>
 
       <div className="flex items-center gap-3 mb-4">
-        <Avatar name={friend.full_name} size="lg" />
+        <Avatar name={friend.full_name} size="lg" src={friend.avatar_url || undefined} />
         <div>
           <PageHeader title={<> {friend.full_name} </>} />
           <p className="text-sm text-text-muted">{friend.email}</p>

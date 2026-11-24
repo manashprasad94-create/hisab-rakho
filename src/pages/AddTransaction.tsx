@@ -320,7 +320,7 @@ export default function AddTransaction() {
               {nonFriendResult && (
                 <div className="flex items-center justify-between mt-2 p-2 bg-white rounded-lg">
                   <div className="flex items-center gap-2">
-                    <Avatar name={nonFriendResult.full_name} size="sm" />
+                    <Avatar name={nonFriendResult.full_name} size="sm" src={nonFriendResult?.avatar_url || undefined} />
                     <span className="text-sm font-medium">{nonFriendResult.full_name}</span>
                   </div>
                   <Button type="button" onClick={handleUseNonFriend} className="text-xs py-1.5 px-3">
@@ -333,7 +333,7 @@ export default function AddTransaction() {
 
           {selectedNonFriendName && (
             <div className="flex items-center gap-2 mb-4 p-2 bg-primary/10 rounded-xl">
-              <Avatar name={selectedNonFriendName} size="sm" />
+              <Avatar name={selectedNonFriendName} size="sm" src={nonFriendResult?.avatar_url || undefined} />
               <span className="text-sm font-medium">{selectedNonFriendName}</span>
               <span className="text-xs text-text-muted ml-auto">Friend request sent</span>
             </div>
@@ -344,7 +344,7 @@ export default function AddTransaction() {
           ) : (
             <FriendSelect
               key={mode}
-              friends={friends.map((f) => ({ id: f.friend.id, name: f.friend.full_name }))}
+              friends={friends.map((f) => ({ id: f.friend.id, name: f.friend.full_name, avatar_url: f.friend.avatar_url }))}
               multiple={mode !== 'single'}
               selectedIds={mode === 'single' ? (friendId ? [friendId] : []) : selectedFriends}
               onSelect={mode === 'single' ? setFriendId : toggleFriendSelection}

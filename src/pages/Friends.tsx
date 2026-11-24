@@ -173,7 +173,7 @@ export default function Friends() {
         {searchResult && (
           <div className="flex items-center justify-between mt-3 p-3 bg-bg-soft rounded-xl gap-2">
             <div className="flex items-center gap-2 min-w-0 flex-1">
-              <Avatar name={searchResult.full_name} size="sm" />
+              <Avatar name={searchResult.full_name} size="sm" src={searchResult?.avatar_url || undefined} />
               <span className="text-sm font-medium truncate">{searchResult.full_name}</span>
             </div>
             <Button size="sm" onClick={() => handleAdd(searchResult.id)} disabled={loading} className="shrink-0">
@@ -264,7 +264,7 @@ export default function Friends() {
               onClick={() => navigate(`/friends/${f.friend.id}`)}
               className="flex items-center gap-3 p-3"
             >
-              <Avatar name={f.friend.full_name} />
+              <Avatar name={f.friend.full_name} src={f.friend?.avatar_url || undefined} />
               <span className="font-medium">{f.friend.full_name}</span>
             </Card>
           ))}

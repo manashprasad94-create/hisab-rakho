@@ -1,7 +1,7 @@
 import PageHeader from '../components/PageHeader'
 import StatusMessage from '../components/StatusMessage'
 import { Input } from '../components/FormControls'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Camera, LogOut, User as UserIcon, StickyNote, Sun, Moon, Monitor } from 'lucide-react'
 import { useThemeStore } from '../store/themeStore'
@@ -11,6 +11,7 @@ import { signOut } from '../lib/auth'
 import Card from '../components/card'
 import Button from '../components/Button'
 import Avatar from '../components/Avatar'
+import ImageCropModal from '../components/ImageCropModal'
 
 export default function Profile() {
   const { profile, setProfile } = useAuthStore()
@@ -23,6 +24,9 @@ export default function Profile() {
 
   const [loading, setLoading] = useState(false)
   const [avatarUploading, setAvatarUploading] = useState(false)
+  const [cropperOpen, setCropperOpen] = useState(false)
+  const [selectedImgSrc, setSelectedImgSrc] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,14 +48,35 @@ export default function Profile() {
     navigate('/login')
   }
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+
+    // Read the file as data URL to pass to cropper modal
+    const reader = new FileReader()
+    reader.onload = () => {
+      setSelectedImgSrc(reader.result as string)
+      setCropperOpen(true)
+    }
+    reader.readAsDataURL(file)
+
+    // Reset input value so selecting the same file again triggers change event
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const handleCropApply = async (croppedBlob: Blob) => {
     setAvatarUploading(true)
     setMessage('')
     try {
+      // Create a File from the cropped blob
+      const file = new File([croppedBlob], `avatar-${Date.now()}.jpg`, { type: 'image/jpeg' })
       const newUrl = await uploadAvatar(file)
       if (profile) setProfile({ ...profile, avatar_url: newUrl })
+      setCropperOpen(false)
+      setSelectedImgSrc('')
+      setMessage('Profile picture updated successfully')
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Failed to upload photo')
     } finally {
@@ -59,21 +84,35 @@ export default function Profile() {
     }
   }
 
+  const handleCropperClose = () => {
+    if (avatarUploading) return
+    setCropperOpen(false)
+    setSelectedImgSrc('')
+  }
+
   return (
     <div className="app-page">
-      <PageHeader title={<> Profile </> } />
+      <PageHeader title={<> Profile </>} />
 
       <div className="flex items-center gap-3 mb-5">
-        <label className="relative cursor-pointer" style={{ opacity: avatarUploading ? 0.6 : 1, pointerEvents: avatarUploading ? 'none' : 'auto' }}>
+        <label
+          className="relative cursor-pointer group"
+          style={{ opacity: avatarUploading ? 0.6 : 1, pointerEvents: avatarUploading ? 'none' : 'auto' }}
+          title="Click to change profile picture"
+        >
           <Avatar name={fullName || 'U'} size="lg" src={profile?.avatar_url || undefined} />
-          <span className="absolute bottom-0 right-0 bg-primary text-white rounded-full p-0.5 flex items-center justify-center" style={{ width: 20, height: 20 }}>
+          <span
+            className="absolute bottom-0 right-0 bg-primary text-white rounded-full p-0.5 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform"
+            style={{ width: 22, height: 22 }}
+          >
             <Camera size={14} />
           </span>
           <input
+            ref={fileInputRef}
             type="file"
             accept="image/*"
             className="sr-only"
-            onChange={handleAvatarChange}
+            onChange={handleAvatarFileSelect}
             disabled={avatarUploading}
           />
         </label>
@@ -84,14 +123,27 @@ export default function Profile() {
         </div>
       </div>
 
+      <ImageCropModal
+        isOpen={cropperOpen}
+        imageSrc={selectedImgSrc}
+        onClose={handleCropperClose}
+        onApply={handleCropApply}
+        loading={avatarUploading}
+      />
+
       <form onSubmit={handleSave}>
         <Card className="p-4 mb-4">
-          {message && <StatusMessage tone={message === 'Saved' ? 'success' : 'error'}>{message}</StatusMessage>}
+          {message && (
+            <StatusMessage tone={message.includes('Saved') || message.includes('updated') ? 'success' : 'error'}>
+              {message}
+            </StatusMessage>
+          )}
 
           <label htmlFor="profile-field-20" className="flex items-center gap-1.5 text-sm mb-1 text-text-muted font-medium">
             <UserIcon size={14} /> Full Name
           </label>
-          <Input id="profile-field-20"
+          <Input
+            id="profile-field-20"
             type="text"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
@@ -101,7 +153,8 @@ export default function Profile() {
           <label htmlFor="profile-field-21" className="flex items-center gap-1.5 text-sm mb-1 text-text-muted font-medium">
             <UserIcon size={14} /> Phone Number
           </label>
-          <Input id="profile-field-21"
+          <Input
+            id="profile-field-21"
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
@@ -109,7 +162,8 @@ export default function Profile() {
             className="w-full mb-4 px-3 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
           />
           <label htmlFor="profile-upi" className="block text-sm mb-1 font-medium">UPI ID</label>
-          <Input id="profile-upi"
+          <Input
+            id="profile-upi"
             type="text"
             value={upiId}
             onChange={(e) => setUpiId(e.target.value)}
@@ -132,7 +186,11 @@ export default function Profile() {
             aria-pressed={theme === 'light'}
             onClick={() => setTheme('light')}
             className="flex-1 flex flex-col items-center gap-1.5 py-2.5 rounded-xl border text-sm font-semibold transition-colors"
-            style={{ borderColor: theme === 'light' ? 'var(--color-primary)' : 'var(--color-border)', background: theme === 'light' ? 'var(--color-accent-soft)' : 'transparent', color: theme === 'light' ? 'var(--color-primary)' : 'var(--color-text-muted)' }}
+            style={{
+              borderColor: theme === 'light' ? 'var(--color-primary)' : 'var(--color-border)',
+              background: theme === 'light' ? 'var(--color-accent-soft)' : 'transparent',
+              color: theme === 'light' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+            }}
           >
             <Sun size={18} />
             Light
@@ -142,7 +200,11 @@ export default function Profile() {
             aria-pressed={theme === 'dark'}
             onClick={() => setTheme('dark')}
             className="flex-1 flex flex-col items-center gap-1.5 py-2.5 rounded-xl border text-sm font-semibold transition-colors"
-            style={{ borderColor: theme === 'dark' ? 'var(--color-primary)' : 'var(--color-border)', background: theme === 'dark' ? 'var(--color-accent-soft)' : 'transparent', color: theme === 'dark' ? 'var(--color-primary)' : 'var(--color-text-muted)' }}
+            style={{
+              borderColor: theme === 'dark' ? 'var(--color-primary)' : 'var(--color-border)',
+              background: theme === 'dark' ? 'var(--color-accent-soft)' : 'transparent',
+              color: theme === 'dark' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+            }}
           >
             <Moon size={18} />
             Dark
@@ -152,7 +214,11 @@ export default function Profile() {
             aria-pressed={theme === 'system'}
             onClick={() => setTheme('system')}
             className="flex-1 flex flex-col items-center gap-1.5 py-2.5 rounded-xl border text-sm font-semibold transition-colors"
-            style={{ borderColor: theme === 'system' ? 'var(--color-primary)' : 'var(--color-border)', background: theme === 'system' ? 'var(--color-accent-soft)' : 'transparent', color: theme === 'system' ? 'var(--color-primary)' : 'var(--color-text-muted)' }}
+            style={{
+              borderColor: theme === 'system' ? 'var(--color-primary)' : 'var(--color-border)',
+              background: theme === 'system' ? 'var(--color-accent-soft)' : 'transparent',
+              color: theme === 'system' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+            }}
           >
             <Monitor size={18} />
             System

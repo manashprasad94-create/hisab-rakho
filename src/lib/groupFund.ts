@@ -43,7 +43,7 @@ export async function getMyRoleInFund(fundId: string): Promise<'owner' | 'admin'
 export async function listFundMembers(fundId: string) {
   const { data, error } = await supabase
     .from('group_fund_members')
-    .select('id, role, user_id, profiles:user_id(full_name, email)')
+    .select('id, role, user_id, profiles:user_id(full_name, email, avatar_url)')
     .eq('fund_id', fundId)
   if (error) throw error
   return data

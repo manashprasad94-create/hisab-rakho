@@ -3,7 +3,7 @@ import { ChevronDown, Search } from 'lucide-react'
 import Avatar from './Avatar'
 import { Input } from './FormControls'
 
-type FriendOption = { id: string; name: string }
+type FriendOption = { id: string; name: string; avatar_url?: string | null }
 
 export default function FriendSelect({ friends, selectedIds, multiple = false, onSelect }: {
   friends: FriendOption[]
@@ -44,7 +44,7 @@ export default function FriendSelect({ friends, selectedIds, multiple = false, o
             onSelect(friend.id)
             if (!multiple) close()
           }} />
-          <Avatar name={friend.name} size="sm" />
+          <Avatar name={friend.name} size="sm" src={friend.avatar_url || undefined} />
           <span>{friend.name}</span>
         </label>)}
         {visible.length === 0 && <p className="text-sm text-text-muted p-3" role="status">No friends match your search.</p>}

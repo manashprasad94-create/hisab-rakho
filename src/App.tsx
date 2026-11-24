@@ -198,7 +198,7 @@ function Dashboard() {
         <Card><EmptyState icon={Wallet} title="No friends yet" subtitle="Add a friend to start tracking money together" /></Card>
       ) : <div className="record-list">{friends.map((f) => (
         <Card key={f.friendshipId} onClick={() => navigate('/friends/' + f.friend.id)} className="p-4 flex items-center gap-4">
-          <Avatar name={f.friend.full_name} /><span className="font-semibold flex-1 min-w-0">{f.friend.full_name}</span><ChevronRight size={18} className="text-text-muted" aria-hidden="true" />
+          <Avatar name={f.friend.full_name} src={f.friend?.avatar_url || undefined} /><span className="font-semibold flex-1 min-w-0">{f.friend.full_name}</span><ChevronRight size={18} className="text-text-muted" aria-hidden="true" />
         </Card>
       ))}</div>}
     </div>
